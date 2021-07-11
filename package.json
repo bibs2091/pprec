@@ -1,0 +1,16 @@
+{
+  "name": "pfe",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@tensorflow/tfjs": "^3.7.0",
+    "@tensorflow/tfjs-node": "^3.7.0",
+    "node-pre-gyp": "^0.17.0"
+  }
+}

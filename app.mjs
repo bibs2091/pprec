@@ -47,7 +47,7 @@ function createDataset(csvFile = "data.csv") {
         dtype: "float32"
       }
     }
-  })).batch(1)
+  })).batch(512)
   return csvDataset;
 }
 
@@ -64,7 +64,7 @@ async function mmm() {
 
   // dataSet.filter(x => x.ys.rating === 3 ).toArray().then(a => console.log(a));
   // await dataSet.toArray().then(a => console.log(a.xs.user.dataSync()));
-  const dataSet2 = await dataSet.map(x => ({ xs: { user: x.xs.user.reshape([1, 1]), movie: x.xs.movie.reshape([1, 1]) }, ys: x.ys }))
+  const dataSet2 = await dataSet.map(x => ({ xs: { user: x.xs.user.reshape([-1, 1]), movie: x.xs.movie.reshape([-1, 1]) }, ys: x.ys }))
   // await dataSet2.forEachAsync(e => console.log(e.xs.user));
 
   // dataSet2.toArray().then(a => console.log(a));

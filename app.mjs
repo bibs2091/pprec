@@ -21,7 +21,7 @@ function createModel(numUsers = 944, numMovies = 1683) {
   const dotLayer = tf.layers.dot({ axes: -1, name: "rating" }).apply([userEmbeddingLayerOutput, itemEmbeddingLayerOutput]);
   const model = tf.model({ inputs: [userInputLayer, itemInputLayer], outputs: dotLayer });
   const optimizer = tf.train.adam(5e-3);
-  model.compile({
+  model.compile({ 
     optimizer: optimizer,
     loss: 'meanSquaredError'
   });
@@ -64,12 +64,18 @@ function recommendItem(userId, model) {
   return model.predictOnBatch(toPredict).argMax();
 }
 
+async function addRating(userId, movieId, rating, dataSet) {
+  let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), movie: tf.tensor2d([[movieId]]) }, ys: { rating: tf.tensor1d([rating]) } }, ])
+  await dataSet.concatenate(dataSet).forEachAsync(e => console.log(e));
+  return dataSet.concatenate(dataSet);
+}
 
 async function nn() {
   const model = createModel();
-  const dataSet = createDataset();
-  await trainModel(model, dataSet);
-  await recommendItem(9, model).print();
+  let dataSet = createDataset();
+  // await addRating(15,15,22,dataSet)
+  await trainModel(model, dataSet,3);
+  await recommendItem(9, model,3).print();
 }
 
 nn()

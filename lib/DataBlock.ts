@@ -1,11 +1,12 @@
 import * as tf from '@tensorflow/tfjs-node'
 
 class DataBlock {
-
-    fromCsv(path, itemColumn, userColumn, ratingColumn, validationPercentage = 0, header = true, delimiter = ',', batchSize = 32, ratingRange = null, randomSeed = null, options = null) {
+    validationPercentage!: number;
+    dataSet!: tf.data.Dataset<any>;
+    fromCsv(path: string, itemColumn: string, userColumn: string, ratingColumn: string, validationPercentage: number = 0, header: boolean = true, delimiter: string = ',', batchSize: number = 32, ratingRange: null| number[] = null, randomSeed: null| number = null, options: null| object = null) {
         path = "file://" + path;
         this.validationPercentage = validationPercentage
-        let csvDataset = (tf.data.csv(
+        let csvDataset: tf.data.Dataset<any> = (tf.data.csv(
             path, {
             configuredColumnsOnly: true,
             delimiter: delimiter,
@@ -28,19 +29,15 @@ class DataBlock {
         this.dataSet = csvDataset.map(x => ({ xs: { user: x.xs[userColumn].reshape([-1, 1]), item: x.xs[itemColumn].reshape([-1, 1]) }, ys: x.ys }))
     }
 
-    fromTensor(items, users, ratings, validationPercentage = 0, batchSize = 32, ratingRange = null, randomSeed = null, options = null) {
+    fromTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number = 0, batchSize: number = 32, ratingRange:  null | number[] = null, randomSeed: null| number[] = null, options: null| object = null) {
         items = items.reshape([-1, 1])
         users = users.reshape([-1, 1])
         ratings = ratings.flatten()
-        let psuedoDataset = []
+        let psuedoDataset: any[] = []
         for (let i = 0; i < ratings.shape[0]; i++) {
             psuedoDataset.push({ xs: { user: users.slice(i, 1), item: items.slice(i, 1) }, ys: { rating: ratings.slice(i) } })
         }
         this.dataSet = tf.data.array(psuedoDataset)
-    }
-
-    fromJson(json, batchSize = 32,  validationPercentage = 0, ratingRange = null, randomSeed = null, options = null){
-        
     }
 
 

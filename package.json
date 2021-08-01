@@ -12,5 +12,9 @@
     "@tensorflow/tfjs": "^3.7.0",
     "@tensorflow/tfjs-node": "^3.7.0",
     "node-pre-gyp": "^0.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^16.4.10",
+    "tslib": "^2.3.0"
   }
 }

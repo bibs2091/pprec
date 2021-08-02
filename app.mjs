@@ -10,7 +10,7 @@ function createModel(numUsers = 944, numMovies = 1683) {
   }).apply(userInputLayer)
   const userEmbeddingLayerOutput = tf.layers.flatten({ name: "flat1" }).apply(userEmbeddingLayer);
 
-  const itemInputLayer = tf.input({ shape: 1, dtype: "int32", name: "movie" });
+  const itemInputLayer = tf.input({ shape: [1], dtype: "int32", name: "movie" });
   const itemEmbeddingLayer = tf.layers.embedding({
     inputDim: numMovies + 1,
     outputDim: 5,
@@ -28,7 +28,7 @@ function createModel(numUsers = 944, numMovies = 1683) {
   // model.summary()
   return model;
 }
-function createDataset(csvFile = "data.csv") {
+function createDataset(csvFile = "./examples/data.csv") {
   csvFile = "file://" + csvFile;
   const csvDataset = (tf.data.csv(
     csvFile, {

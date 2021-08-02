@@ -1,6 +1,6 @@
 import * as tf from '@tensorflow/tfjs-node'
 
-class DataBlock {
+export class DataBlock {
     validationPercentage!: number;
     dataSet!: tf.data.Dataset<any>;
     fromCsv(path: string, itemColumn: string, userColumn: string, ratingColumn: string, validationPercentage: number = 0, header: boolean = true, delimiter: string = ',', batchSize: number = 32, ratingRange: null| number[] = null, randomSeed: null| number = null, options: null| object = null) {

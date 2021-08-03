@@ -3,7 +3,7 @@ import * as tf from '@tensorflow/tfjs-node'
 export class DataBlock {
     validationPercentage!: number;
     dataSet!: tf.data.Dataset<any>;
-    fromCsv(path: string, itemColumn: string, userColumn: string, ratingColumn: string, validationPercentage: number = 0, header: boolean = true, delimiter: string = ',', batchSize: number = 32, ratingRange: null| number[] = null, randomSeed: null| number = null, options: null| object = null) {
+    fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, validationPercentage: number = 0, header: boolean = true, delimiter: string = ',', batchSize: number = 32, ratingRange: null | number[] = null, randomSeed: null | number = null, options: null | object = null) {
         path = "file://" + path;
         this.validationPercentage = validationPercentage
         let csvDataset: tf.data.Dataset<any> = (tf.data.csv(
@@ -29,7 +29,7 @@ export class DataBlock {
         this.dataSet = csvDataset.map(x => ({ xs: { user: x.xs[userColumn].reshape([-1, 1]), item: x.xs[itemColumn].reshape([-1, 1]) }, ys: x.ys }))
     }
 
-    fromTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number = 0, batchSize: number = 32, ratingRange:  null | number[] = null, randomSeed: null| number[] = null, options: null| object = null) {
+    fromTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number = 0, batchSize: number = 32, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null) {
         items = items.reshape([-1, 1])
         users = users.reshape([-1, 1])
         ratings = ratings.flatten()
@@ -41,9 +41,8 @@ export class DataBlock {
     }
 
 
- 
+
 }
 
-let dataset = new DataBlock()
 // dataset.fromCsv("data.csv", 'user', 'movie', 'rating')
 // dataset.fromTensor(tf.tensor([1, 2, 3, 4]), tf.tensor([1, 2, 3, 4]), tf.tensor([1, 2, 3, 4]))

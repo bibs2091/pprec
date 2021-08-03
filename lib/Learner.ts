@@ -1,7 +1,7 @@
 import * as tf from '@tensorflow/tfjs-node'
 import { DataBlock } from './DataBlock'
 
-class learner {
+export class Learner {
     itemsNum: number;
     usersNum: number;
     learningRate: number;
@@ -11,17 +11,14 @@ class learner {
     validationDataset: tf.data.Dataset<any>;
     userInputLayer; userEmbeddingLayer; userEmbeddingLayerOutput; itemInputLayer; itemEmbeddingLayer; itemEmbeddingLayerOutput; dotLayer;
     model: tf.LayersModel;
-    constructor(dataBlock: DataBlock, itemsNum: number, usersNum: number, learningRate: number, lossFunc: string, optimizerName: string, embeddingOutputSize: number = 5, options: object | null) {
+    constructor(dataBlock: DataBlock, usersNum: number, itemsNum: number, learningRate: number = 5e-3, lossFunc: string = "meanSquaredError", optimizerName: string = "adam", embeddingOutputSize: number = 5, options?: object) {
         this.itemsNum = itemsNum;
         this.usersNum = usersNum;
         this.lossFunc = lossFunc;
         this.learningRate = learningRate;
         this.dataSet = dataBlock.dataSet;
-
         this.createModel(embeddingOutputSize);
         this.setOptimizer(optimizerName)
-
-
     }
 
     createModel(embeddingOutputSize: number) {
@@ -34,7 +31,7 @@ class learner {
         }).apply(this.userInputLayer)
         this.userEmbeddingLayerOutput = tf.layers.flatten({ name: "flat1" }).apply(this.userEmbeddingLayer);
 
-        this.itemInputLayer = tf.input({ shape: [1], dtype: "int32", name: "movie" });
+        this.itemInputLayer = tf.input({ shape: [1], dtype: "int32", name: "item" });
         this.itemEmbeddingLayer = tf.layers.embedding({
             inputDim: this.itemsNum + 1,
             outputDim: embeddingOutputSize,
@@ -59,9 +56,15 @@ class learner {
                 this.optimizer = tf.train.rmsprop(this.learningRate);
                 break;
         }
-        this.model.compile({ 
+        this.model.compile({
             optimizer: this.optimizer,
             loss: this.lossFunc
-          });
+        });
+    }
+
+    fit(epochs: number = 1) {
+        this.model.fitDataset(this.dataSet, {
+            epochs: epochs,
+        }).then(() => console.log("done")).catch(e => console.log(e));
     }
 }

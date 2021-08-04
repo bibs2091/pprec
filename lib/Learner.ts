@@ -7,7 +7,7 @@ export class Learner {
     learningRate: number;
     lossFunc: string;
     optimizer: tf.Optimizer;
-    dataSet: tf.data.Dataset<any>;
+    trainingDataset: tf.data.Dataset<any>;
     validationDataset: tf.data.Dataset<any>;
     userInputLayer; userEmbeddingLayer; userEmbeddingLayerOutput; itemInputLayer; itemEmbeddingLayer; itemEmbeddingLayerOutput; dotLayer;
     model: tf.LayersModel;
@@ -16,9 +16,11 @@ export class Learner {
         this.usersNum = usersNum;
         this.lossFunc = lossFunc;
         this.learningRate = learningRate;
-        this.dataSet = dataBlock.dataSet;
+        this.trainingDataset = dataBlock.trainingDataset;
+        this.validationDataset = dataBlock.validationDataset;
+
         this.createModel(embeddingOutputSize);
-        this.setOptimizer(optimizerName)
+        this.setOptimizer(optimizerName);
     }
 
     createModel(embeddingOutputSize: number) {
@@ -51,7 +53,6 @@ export class Learner {
             case "sgd":
                 this.optimizer = tf.train.sgd(this.learningRate);
                 break;
-
             case "rmsprop":
                 this.optimizer = tf.train.rmsprop(this.learningRate);
                 break;
@@ -62,9 +63,10 @@ export class Learner {
         });
     }
 
-    fit(epochs: number = 1) {
-        this.model.fitDataset(this.dataSet, {
+    async fit(epochs: number = 1) {
+        await this.model.fitDataset(this.trainingDataset, {
+            validationData: this.validationDataset,
             epochs: epochs,
-        }).then(() => console.log("done")).catch(e => console.log(e));
+        })
     }
 }

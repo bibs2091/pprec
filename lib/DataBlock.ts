@@ -30,7 +30,7 @@ export class DataBlock {
                     dtype: "float32"
                 }
             }
-        })).shuffle(1000, seed.toString(), false)
+        })).shuffle(this.datasetSize, seed.toString(), false)
 
 
         let trainSize = Math.round((1 - validationPercentage) * this.datasetSize)

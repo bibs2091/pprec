@@ -11,7 +11,7 @@ export class Learner {
     validationDataset: tf.data.Dataset<any>;
     userInputLayer; userEmbeddingLayer; userEmbeddingLayerOutput; itemInputLayer; itemEmbeddingLayer; itemEmbeddingLayerOutput; dotLayer;
     model: tf.LayersModel;
-    constructor(dataBlock: DataBlock, usersNum: number, itemsNum: number, learningRate: number = 5e-3, lossFunc: string = "meanSquaredError", optimizerName: string = "adam", embeddingOutputSize: number = 5, options?: object) {
+    constructor(dataBlock: DataBlock, usersNum: number, itemsNum: number, learningRate: number = 1e-2, lossFunc: string = "meanSquaredError", optimizerName: string = "adam", embeddingOutputSize: number = 5, weightDecay: number = 0, options?: object) {
         this.itemsNum = itemsNum;
         this.usersNum = usersNum;
         this.lossFunc = lossFunc;
@@ -19,17 +19,18 @@ export class Learner {
         this.trainingDataset = dataBlock.trainingDataset;
         this.validationDataset = dataBlock.validationDataset;
 
-        this.createModel(embeddingOutputSize);
+        this.createModel(embeddingOutputSize, weightDecay);
         this.setOptimizer(optimizerName);
     }
 
-    createModel(embeddingOutputSize: number) {
+    createModel(embeddingOutputSize: number, weightDecay: number) {
         this.userInputLayer = tf.input({ shape: [1], dtype: "int32", name: "user" });
         this.userEmbeddingLayer = tf.layers.embedding({
             inputDim: this.usersNum + 1,
             outputDim: embeddingOutputSize,
             inputLength: 1,
             name: "userEmbeddingLayer",
+            embeddingsRegularizer: tf.regularizers.l2({ l2: weightDecay })
         }).apply(this.userInputLayer)
         this.userEmbeddingLayerOutput = tf.layers.flatten({ name: "flat1" }).apply(this.userEmbeddingLayer);
 
@@ -39,6 +40,7 @@ export class Learner {
             outputDim: embeddingOutputSize,
             inputLength: 1,
             name: "itemEmbeddingLayer",
+            embeddingsRegularizer: tf.regularizers.l2({ l2: weightDecay })
         }).apply(this.itemInputLayer);
         this.itemEmbeddingLayerOutput = tf.layers.flatten({ name: "flat2" }).apply(this.itemEmbeddingLayer);
         this.dotLayer = tf.layers.dot({ axes: -1, name: "rating" }).apply([this.userEmbeddingLayerOutput, this.itemEmbeddingLayerOutput]);

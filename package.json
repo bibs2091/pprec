@@ -9,8 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@tensorflow/tfjs": "^3.7.0",
-    "@tensorflow/tfjs-node": "^3.7.0",
+    "@tensorflow/tfjs": "^3.8.0",
+    "@tensorflow/tfjs-node": "^3.8.0",
     "danfojs-node": "^0.2.7",
     "node-pre-gyp": "^0.17.0"
   },

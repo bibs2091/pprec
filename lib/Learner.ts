@@ -65,10 +65,16 @@ export class Learner {
         });
     }
 
-    async fit(epochs: number = 1) {
-        await this.model.fitDataset(this.trainingDataset, {
+    fit(epochs: number = 1) {
+        return this.model.fitDataset(this.trainingDataset, {
             validationData: this.validationDataset,
             epochs: epochs,
         })
+    }
+
+
+    recommendItem(userId) {
+        let toPredict = [tf.fill([this.itemsNum, 1], userId), tf.range(0, this.itemsNum).reshape([-1, 1])]
+        return (this.model.predictOnBatch(toPredict) as tf.Tensor).argMax();
     }
 }

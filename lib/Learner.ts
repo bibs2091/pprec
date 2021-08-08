@@ -73,8 +73,16 @@ export class Learner {
     }
 
 
-    recommendItem(userId) {
+    recommendItem(userId: number) {
         let toPredict = [tf.fill([this.itemsNum, 1], userId), tf.range(0, this.itemsNum).reshape([-1, 1])]
         return (this.model.predictOnBatch(toPredict) as tf.Tensor).argMax();
+    }
+
+    save(path: string){
+        return this.model.save('file://' + path);
+    }
+
+    load(path: string){
+        return tf.loadLayersModel('file://' + path);
     }
 }

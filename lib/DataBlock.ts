@@ -4,11 +4,12 @@ export class DataBlock {
     trainingDataset: tf.data.Dataset<any>;
     validationDataset: tf.data.Dataset<any>;
     datasetSize: number;
+    ratingRange:  null | number[];
     async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, validationPercentage: number = 0.2, header: boolean = true, delimiter: string = ',', batchSize: number = 16, ratingRange: null | number[] = null, seed: number = 42, options: null | object = null) {
         let myPath = "file://" + path;
         let myCsv = await dfd.read_csv(myPath);
-
         this.datasetSize = myCsv.shape[0];
+        this.ratingRange = ratingRange;
 
 
         let csvDataset: tf.data.Dataset<any> = (tf.data.csv(

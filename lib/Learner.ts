@@ -1,6 +1,6 @@
 import * as tf from '@tensorflow/tfjs-node'
 import { DataBlock } from './DataBlock'
-import {SigmoidRange} from './SigmoidRange'
+import { SigmoidRange } from './SigmoidRange'
 export class Learner {
     itemsNum: number;
     usersNum: number;
@@ -20,11 +20,11 @@ export class Learner {
         this.trainingDataset = dataBlock.trainingDataset;
         this.validationDataset = dataBlock.validationDataset;
 
-        this.createModel(embeddingOutputSize, weightDecay);
+        this.createModel(embeddingOutputSize, weightDecay, dataBlock.ratingRange);
         this.setOptimizer(optimizerName);
     }
 
-    createModel(embeddingOutputSize: number, weightDecay: number) {
+    createModel(embeddingOutputSize: number, weightDecay: number, ratingRange: null | number[]) {
         this.userInputLayer = tf.input({ shape: [1], dtype: "int32", name: "user" });
         this.userEmbeddingLayer = tf.layers.embedding({
             inputDim: this.usersNum + 1,
@@ -44,9 +44,20 @@ export class Learner {
             embeddingsRegularizer: tf.regularizers.l2({ l2: weightDecay })
         }).apply(this.itemInputLayer);
         this.itemEmbeddingLayerOutput = tf.layers.flatten({ name: "flat2" }).apply(this.itemEmbeddingLayer);
-        this.dotLayer = tf.layers.dot({ axes: -1, name: "dot" }).apply([this.userEmbeddingLayerOutput, this.itemEmbeddingLayerOutput]);
-        this.sigmoidLayer = new SigmoidRange({high: 5.5, low: 1,  name: "rating"}).apply(this.dotLayer)
-        this.model = tf.model({ inputs: [this.userInputLayer, this.itemInputLayer], outputs: this.sigmoidLayer });
+
+        // if user did not specify a range for the ratings
+        if (ratingRange == null) {
+            this.dotLayer = tf.layers.dot({ axes: -1, name: "rating" }).apply([this.userEmbeddingLayerOutput, this.itemEmbeddingLayerOutput]);
+            this.model = tf.model({ inputs: [this.userInputLayer, this.itemInputLayer], outputs: this.dotLayer });
+        }
+
+        // if user did specify a range for the ratings high and low
+        else {
+            this.dotLayer = tf.layers.dot({ axes: -1, name: "dot" }).apply([this.userEmbeddingLayerOutput, this.itemEmbeddingLayerOutput]);
+            this.sigmoidLayer = new SigmoidRange({ high: ratingRange[1], low: ratingRange[0], name: "rating" }).apply(this.dotLayer)
+            this.model = tf.model({ inputs: [this.userInputLayer, this.itemInputLayer], outputs: this.sigmoidLayer });
+        }
+
     }
 
     setOptimizer(optimizerName: string) {
@@ -80,11 +91,11 @@ export class Learner {
         return (this.model.predictOnBatch(toPredict) as tf.Tensor).argMax();
     }
 
-    save(path: string){
+    save(path: string) {
         return this.model.save('file://' + path);
     }
 
-    load(path: string){
+    load(path: string) {
         return tf.loadLayersModel('file://' + path);
     }
 }

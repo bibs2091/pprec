@@ -1,6 +1,6 @@
 import * as tf from '@tensorflow/tfjs-node'
 import { DataBlock } from './DataBlock'
-
+import {SigmoidRange} from './SigmoidRange'
 export class Learner {
     itemsNum: number;
     usersNum: number;
@@ -10,6 +10,7 @@ export class Learner {
     trainingDataset: tf.data.Dataset<any>;
     validationDataset: tf.data.Dataset<any>;
     userInputLayer; userEmbeddingLayer; userEmbeddingLayerOutput; itemInputLayer; itemEmbeddingLayer; itemEmbeddingLayerOutput; dotLayer;
+    sigmoidLayer;
     model: tf.LayersModel;
     constructor(dataBlock: DataBlock, usersNum: number, itemsNum: number, learningRate: number = 1e-2, lossFunc: string = "meanSquaredError", optimizerName: string = "adam", embeddingOutputSize: number = 5, weightDecay: number = 0, options?: object) {
         this.itemsNum = itemsNum;
@@ -43,8 +44,9 @@ export class Learner {
             embeddingsRegularizer: tf.regularizers.l2({ l2: weightDecay })
         }).apply(this.itemInputLayer);
         this.itemEmbeddingLayerOutput = tf.layers.flatten({ name: "flat2" }).apply(this.itemEmbeddingLayer);
-        this.dotLayer = tf.layers.dot({ axes: -1, name: "rating" }).apply([this.userEmbeddingLayerOutput, this.itemEmbeddingLayerOutput]);
-        this.model = tf.model({ inputs: [this.userInputLayer, this.itemInputLayer], outputs: this.dotLayer });
+        this.dotLayer = tf.layers.dot({ axes: -1, name: "dot" }).apply([this.userEmbeddingLayerOutput, this.itemEmbeddingLayerOutput]);
+        this.sigmoidLayer = new SigmoidRange({high: 5.5, low: 1,  name: "rating"}).apply(this.dotLayer)
+        this.model = tf.model({ inputs: [this.userInputLayer, this.itemInputLayer], outputs: this.sigmoidLayer });
     }
 
     setOptimizer(optimizerName: string) {

@@ -1,14 +1,17 @@
 const dfd = require("danfojs-node")
 import * as tf from '@tensorflow/tfjs-node'
+import * as csv from '@fast-csv/parse';
+import * as fs from 'fs';
+
+
 export class DataBlock {
     trainingDataset: tf.data.Dataset<any>;
     validationDataset: tf.data.Dataset<any>;
     datasetSize: number;
-    ratingRange:  null | number[];
+    ratingRange: null | number[];
     async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, validationPercentage: number = 0.2, header: boolean = true, delimiter: string = ',', batchSize: number = 16, ratingRange: null | number[] = null, seed: number = 42, options: null | object = null) {
         let myPath = "file://" + path;
-        let myCsv = await dfd.read_csv(myPath);
-        this.datasetSize = myCsv.shape[0];
+        this.datasetSize = await this.getInfoOnCsv(path, header)
         this.ratingRange = ratingRange;
 
 
@@ -55,8 +58,14 @@ export class DataBlock {
     }
 
 
+    async getInfoOnCsv(path: string, header: boolean) {
+        let datasetSize_ = new Promise<number>(function (resolve, reject) {
+            csv.parseFile(path)
+                .on('error', error => console.error(error))
+                .on('data', () => { })
+                .on('end', (rowCount: number) => resolve(rowCount))
+        });
+        return (await datasetSize_) - (header ? 1 : 0);
+    }
 
 }
-
-// dataset.fromCsv("data.csv", 'user', 'movie', 'rating')
-// dataset.fromTensor(tf.tensor([1, 2, 3, 4]), tf.tensor([1, 2, 3, 4]), tf.tensor([1, 2, 3, 4]))

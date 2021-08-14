@@ -12,9 +12,9 @@ export class Learner {
     userInputLayer; userEmbeddingLayer; userEmbeddingLayerOutput; itemInputLayer; itemEmbeddingLayer; itemEmbeddingLayerOutput; dotLayer;
     sigmoidLayer;
     model: tf.LayersModel;
-    constructor(dataBlock: DataBlock, usersNum: number, itemsNum: number, learningRate: number = 1e-2, lossFunc: string = "meanSquaredError", optimizerName: string = "adam", embeddingOutputSize: number = 5, weightDecay: number = 0, options?: object) {
-        this.itemsNum = itemsNum;
-        this.usersNum = usersNum;
+    constructor(dataBlock: DataBlock, learningRate: number = 1e-2, lossFunc: string = "meanSquaredError", optimizerName: string = "adam", embeddingOutputSize: number = 5, weightDecay: number = 0, options?: object) {
+        this.itemsNum = dataBlock.datasetInfo.itemsNum;
+        this.usersNum = dataBlock.datasetInfo.usersNum;
         this.lossFunc = lossFunc;
         this.learningRate = learningRate;
         this.trainingDataset = dataBlock.trainingDataset;

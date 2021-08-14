@@ -1,17 +1,20 @@
-const dfd = require("danfojs-node")
 import * as tf from '@tensorflow/tfjs-node'
 import * as csv from '@fast-csv/parse';
 import * as fs from 'fs';
 
+interface IdatasetInfo{
+    size: number; usersNum: number; itemsNum: number;
+}
 
 export class DataBlock {
     trainingDataset: tf.data.Dataset<any>;
     validationDataset: tf.data.Dataset<any>;
-    datasetSize: number;
+    datasetInfo: IdatasetInfo;
     ratingRange: null | number[];
-    async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, validationPercentage: number = 0.2, header: boolean = true, delimiter: string = ',', batchSize: number = 16, ratingRange: null | number[] = null, seed: number = 42, options: null | object = null) {
+    async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, validationPercentage: number = 0.2, delimiter: string = ',', batchSize: number = 16, ratingRange: null | number[] = null, seed: number = 42, options: null | object = null) {
         let myPath = "file://" + path;
-        this.datasetSize = await this.getInfoOnCsv(path, header)
+        this.datasetInfo = await this.getInfoOnCsv(path)
+        // console.log(this.datasetInfo );
         this.ratingRange = ratingRange;
 
 
@@ -19,7 +22,7 @@ export class DataBlock {
             myPath, {
             configuredColumnsOnly: true,
             delimiter: delimiter,
-            hasHeader: header,
+            // hasHeader: header,
             columnConfigs: {
                 [userColumn]: {
                     required: true,
@@ -34,10 +37,10 @@ export class DataBlock {
                     dtype: "float32"
                 }
             }
-        })).shuffle(this.datasetSize, seed.toString(), false)
+        })).shuffle(this.datasetInfo.size, seed.toString(), false)
 
 
-        let trainSize = Math.round((1 - validationPercentage) * this.datasetSize)
+        let trainSize = Math.round((1 - validationPercentage) * this.datasetInfo.size)
 
         this.trainingDataset = csvDataset.take(trainSize).batch(batchSize);
         this.trainingDataset = this.trainingDataset.map(x => ({ xs: { user: x.xs[userColumn].reshape([-1, 1]), item: x.xs[itemColumn].reshape([-1, 1]) }, ys: x.ys }))
@@ -58,14 +61,26 @@ export class DataBlock {
     }
 
 
-    async getInfoOnCsv(path: string, header: boolean) {
-        let datasetSize_ = new Promise<number>(function (resolve, reject) {
-            csv.parseFile(path)
+    async getInfoOnCsv(path: string) {
+        let datasetSize_ = new Promise<IdatasetInfo>(function (resolve, reject) {
+            let csvInfo = { size: 0, usersNum: 0, itemsNum: 0 }
+            let uniqueItems = new Set()
+            let uniqueUsers = new Set()
+            csv.parseFile(path, { headers: true })
                 .on('error', error => console.error(error))
-                .on('data', () => { })
-                .on('end', (rowCount: number) => resolve(rowCount))
+                .on('data', (data) => {
+                    uniqueUsers.add(data.user)
+                    uniqueItems.add(data.movie)
+                })
+                .on('end', (rowCount: number) => {
+                    csvInfo.size = rowCount;
+                    csvInfo.usersNum = uniqueUsers.size + 1
+                    csvInfo.itemsNum = uniqueItems.size + 1
+                    return resolve(csvInfo);
+                }
+                )
         });
-        return (await datasetSize_) - (header ? 1 : 0);
+        return datasetSize_;
     }
 
 }

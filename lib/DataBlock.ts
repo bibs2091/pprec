@@ -2,7 +2,7 @@ import * as tf from '@tensorflow/tfjs-node'
 import * as csv from '@fast-csv/parse';
 import * as fs from 'fs';
 
-interface IdatasetInfo{
+interface IdatasetInfo {
     size: number; usersNum: number; itemsNum: number;
 }
 
@@ -13,7 +13,7 @@ export class DataBlock {
     ratingRange: null | number[];
     async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, validationPercentage: number = 0.2, delimiter: string = ',', batchSize: number = 16, ratingRange: null | number[] = null, seed: number = 42, options: null | object = null) {
         let myPath = "file://" + path;
-        this.datasetInfo = await this.getInfoOnCsv(path)
+        this.datasetInfo = await this.getInfoOnCsv(path, userColumn, itemColumn)
         // console.log(this.datasetInfo );
         this.ratingRange = ratingRange;
 
@@ -61,7 +61,7 @@ export class DataBlock {
     }
 
 
-    async getInfoOnCsv(path: string) {
+    async getInfoOnCsv(path: string, userColumn: string, itemColumn: string) {
         let datasetSize_ = new Promise<IdatasetInfo>(function (resolve, reject) {
             let csvInfo = { size: 0, usersNum: 0, itemsNum: 0 }
             let uniqueItems = new Set()
@@ -69,8 +69,8 @@ export class DataBlock {
             csv.parseFile(path, { headers: true })
                 .on('error', error => console.error(error))
                 .on('data', (data) => {
-                    uniqueUsers.add(data.user)
-                    uniqueItems.add(data.movie)
+                    uniqueUsers.add(data[userColumn])
+                    uniqueItems.add(data[itemColumn])
                 })
                 .on('end', (rowCount: number) => {
                     csvInfo.size = rowCount;

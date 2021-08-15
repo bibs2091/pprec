@@ -1,6 +1,5 @@
 import * as tf from '@tensorflow/tfjs-node'
 import * as csv from '@fast-csv/parse';
-import * as fs from 'fs';
 
 interface IdatasetInfo {
     size: number; usersNum: number; itemsNum: number;
@@ -14,7 +13,6 @@ export class DataBlock {
     async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, validationPercentage: number = 0.2, delimiter: string = ',', batchSize: number = 16, ratingRange: null | number[] = null, seed: number = 42, options: null | object = null) {
         let myPath = "file://" + path;
         this.datasetInfo = await this.getInfoOnCsv(path, userColumn, itemColumn)
-        // console.log(this.datasetInfo );
         this.ratingRange = ratingRange;
 
 
@@ -50,14 +48,23 @@ export class DataBlock {
     }
 
     fromTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number = 0, batchSize: number = 32, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null) {
-        items = items.reshape([-1, 1])
-        users = users.reshape([-1, 1])
-        ratings = ratings.flatten()
-        let psuedoDataset: any[] = []
-        for (let i = 0; i < ratings.shape[0]; i++) {
-            psuedoDataset.push({ xs: { user: users.slice(i, 1), item: items.slice(i, 1) }, ys: { rating: ratings.slice(i) } })
+        let datasetSize: number = ratings.flatten().shape[0];
+        let randomTen = Array.from(tf.util.createShuffledIndices(datasetSize));
+        items = items.reshape([-1, 1]).gather(randomTen);
+        users = users.reshape([-1, 1]).gather(randomTen);
+        ratings = ratings.flatten().gather(randomTen);
+
+        if (validationPercentage > 0) {
+            this.splitTrainValidTensor(items, users, ratings, datasetSize, validationPercentage)
         }
-        this.trainingDataset = tf.data.array(psuedoDataset)
+        else{
+            let psuedoTrainingDataset = []
+            for (let i = 0; i < ratings.shape[0]; i++) {
+                psuedoTrainingDataset.push({ xs: { user: users.slice(i, 1), item: items.slice(i, 1) }, ys: { rating: ratings.slice(i) } })
+            }
+            this.trainingDataset = tf.data.array(psuedoTrainingDataset)
+        }
+        
     }
 
 
@@ -74,13 +81,34 @@ export class DataBlock {
                 })
                 .on('end', (rowCount: number) => {
                     csvInfo.size = rowCount;
-                    csvInfo.usersNum = uniqueUsers.size + 1
-                    csvInfo.itemsNum = uniqueItems.size + 1
+                    csvInfo.usersNum = uniqueUsers.size
+                    csvInfo.itemsNum = uniqueItems.size
                     return resolve(csvInfo);
                 }
                 )
         });
         return datasetSize_;
+    }
+
+    splitTrainValidTensor(items, users, ratings, datasetSize: number, validationPercentage: number) {
+        let trainSize: number = Math.round((1 - validationPercentage) * datasetSize)
+        let validSize: number = Math.abs(trainSize - datasetSize)
+        let [trainingItems, validationItems] = tf.split(items, [trainSize, validSize], 0);
+        let [trainingUsers, validationUsers] = tf.split(users, [trainSize, validSize], 0);
+        let [trainingRatings, validationRatings] = tf.split(ratings, [trainSize, validSize], 0);
+
+        let psuedoTrainingDataset = []
+        for (let i = 0; i < trainingRatings.shape[0]; i++) {
+            psuedoTrainingDataset.push({ xs: { user: trainingUsers.slice(i, 1), item: trainingItems.slice(i, 1) }, ys: { rating: trainingRatings.slice(i) } })
+        }
+        this.trainingDataset = tf.data.array(psuedoTrainingDataset)
+
+
+        let psuedoValidationDataset= []
+        for (let i = 0; i < validationRatings.shape[0]; i++) {
+            psuedoValidationDataset.push({ xs: { user: validationUsers.slice(i, 1), item: validationItems.slice(i, 1) }, ys: { rating: validationRatings.slice(i) } })
+        }
+        this.validationDataset = tf.data.array(psuedoValidationDataset)
     }
 
 }

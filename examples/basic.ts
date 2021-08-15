@@ -5,17 +5,17 @@ import * as tf from '@tensorflow/tfjs-node'
 
 async function main() {
     let IMDB = new DataBlock()
-    // await IMDB.fromCsv("./examples/data.csv", 'user', 'movie', 'rating')
+    await IMDB.fromCsv("./examples/data.csv", 'user', 'movie', 'rating')
 
-    IMDB.fromTensor(tf.tensor([1, 2, 3, 4]), tf.tensor([1, 2, 3, 4]), tf.tensor([1, 2, 3, 4]))
+    // IMDB.fromTensor(tf.tensor([1, 2, 3, 4]), tf.tensor([1, 2, 3, 4]), tf.tensor([1, 2, 3, 4]))
 
-    // let learner = new Learner(IMDB, 5e-3)
+    let learner = new Learner(IMDB, 5e-3)
 
-    // await learner.fit(1);
-    // learner.recommendItem(10).print();
+    await learner.fit(1);
+    learner.recommendItem(10).print();
 
-    // // saving the model
-    // learner.save("myModel");
+    // saving the model
+    learner.save("myModel");
 
 }
 

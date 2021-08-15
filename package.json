@@ -12,7 +12,6 @@
     "@fast-csv/parse": "^4.3.6",
     "@tensorflow/tfjs": "^3.8.0",
     "@tensorflow/tfjs-node": "^3.8.0",
-    "danfojs-node": "^0.2.7",
     "node-pre-gyp": "^0.17.0"
   },
   "devDependencies": {

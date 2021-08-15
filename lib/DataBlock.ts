@@ -48,23 +48,28 @@ export class DataBlock {
     }
 
     fromTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number = 0, batchSize: number = 32, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null) {
-        let datasetSize: number = ratings.flatten().shape[0];
-        let randomTen = Array.from(tf.util.createShuffledIndices(datasetSize));
+        this.datasetInfo = { size: 0, usersNum: 0, itemsNum: 0 }
+        this.datasetInfo.size = ratings.flatten().shape[0];
+
+        let randomTen = Array.from(tf.util.createShuffledIndices(this.datasetInfo.size));
         items = items.reshape([-1, 1]).gather(randomTen);
         users = users.reshape([-1, 1]).gather(randomTen);
         ratings = ratings.flatten().gather(randomTen);
+        // this.datasetInfo.usersNum = tf.unique(items)["values"].shape[0];   
+        // this.datasetInfo.itemsNum = tf.unique(users)["values"].shape[0];   
 
         if (validationPercentage > 0) {
-            this.splitTrainValidTensor(items, users, ratings, datasetSize, validationPercentage)
+            this.splitTrainValidTensor(items, users, ratings, validationPercentage)
         }
-        else{
+        else {
             let psuedoTrainingDataset = []
             for (let i = 0; i < ratings.shape[0]; i++) {
                 psuedoTrainingDataset.push({ xs: { user: users.slice(i, 1), item: items.slice(i, 1) }, ys: { rating: ratings.slice(i) } })
             }
             this.trainingDataset = tf.data.array(psuedoTrainingDataset)
         }
-        
+
+
     }
 
 
@@ -90,9 +95,9 @@ export class DataBlock {
         return datasetSize_;
     }
 
-    splitTrainValidTensor(items, users, ratings, datasetSize: number, validationPercentage: number) {
-        let trainSize: number = Math.round((1 - validationPercentage) * datasetSize)
-        let validSize: number = Math.abs(trainSize - datasetSize)
+    splitTrainValidTensor(items, users, ratings, validationPercentage: number) {
+        let trainSize: number = Math.round((1 - validationPercentage) * this.datasetInfo.size)
+        let validSize: number = Math.abs(trainSize - this.datasetInfo.size)
         let [trainingItems, validationItems] = tf.split(items, [trainSize, validSize], 0);
         let [trainingUsers, validationUsers] = tf.split(users, [trainSize, validSize], 0);
         let [trainingRatings, validationRatings] = tf.split(ratings, [trainSize, validSize], 0);
@@ -104,11 +109,10 @@ export class DataBlock {
         this.trainingDataset = tf.data.array(psuedoTrainingDataset)
 
 
-        let psuedoValidationDataset= []
+        let psuedoValidationDataset = []
         for (let i = 0; i < validationRatings.shape[0]; i++) {
             psuedoValidationDataset.push({ xs: { user: validationUsers.slice(i, 1), item: validationItems.slice(i, 1) }, ys: { rating: validationRatings.slice(i) } })
         }
         this.validationDataset = tf.data.array(psuedoValidationDataset)
     }
-
 }

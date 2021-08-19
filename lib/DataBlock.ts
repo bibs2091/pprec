@@ -55,8 +55,6 @@ export class DataBlock {
         items = items.reshape([-1, 1]).gather(randomTen);
         users = users.reshape([-1, 1]).gather(randomTen);
         ratings = ratings.flatten().gather(randomTen);
-        // this.datasetInfo.usersNum = tf.unique(items)["values"].shape[0];   
-        // this.datasetInfo.itemsNum = tf.unique(users)["values"].shape[0];   
 
         if (validationPercentage > 0) {
             this.splitTrainValidTensor(items, users, ratings, validationPercentage)

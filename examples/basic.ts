@@ -9,8 +9,9 @@ async function main() {
 
     // IMDB.fromTensor(tf.tensor([1, 2, 3, 4]), tf.tensor([1, 2, 3, 4]), tf.tensor([1, 2, 3, 4]))
 
-    let learner = new Learner(IMDB, 5e-3)
-
+    let learner = new Learner(IMDB, 5e-3);
+    await learner.fit(1);
+    learner.newUser()
     await learner.fit(1);
     learner.recommendItem(10).print();
 

@@ -1,6 +1,8 @@
 import * as tf from '@tensorflow/tfjs-node'
 
-
+/*
+   SigmoidRange is a custom layer to bound the output of the model in a certain range to speed up the training speed.
+*/
 export class SigmoidRange extends tf.layers.Layer {
     high: number;
     low: number;

@@ -5,22 +5,29 @@ interface IdatasetInfo {
     size: number; usersNum: number; itemsNum: number;
 }
 
+
+/*
+    DataBlock is an api which allows you to generate and manupilate your dataset.
+    To be used in the Learner API 
+*/
 export class DataBlock {
     trainingDataset: tf.data.Dataset<any>;
     validationDataset: tf.data.Dataset<any>;
     datasetInfo: IdatasetInfo;
     ratingRange: null | number[];
-    async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, validationPercentage: number = 0.2, delimiter: string = ',', batchSize: number = 16, ratingRange: null | number[] = null, seed: number = 42, options: null | object = null) {
+
+    /*
+        Create a datablock from a csv file.
+        You should define the name of the columns which contain the corresponding data 
+    */
+    async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, validationPercentage: number = 0.2, delimiter: string = ',', batchSize: number = 16, ratingRange: null | number[] = null, seed: number = 42, options?: object) {
         let myPath = "file://" + path;
         this.datasetInfo = await this.getInfoOnCsv(path, userColumn, itemColumn)
         this.ratingRange = ratingRange;
-
-
         let csvDataset: tf.data.Dataset<any> = (tf.data.csv(
             myPath, {
             configuredColumnsOnly: true,
             delimiter: delimiter,
-            // hasHeader: header,
             columnConfigs: {
                 [userColumn]: {
                     required: true,
@@ -35,27 +42,37 @@ export class DataBlock {
                     dtype: "float32"
                 }
             }
-        })).shuffle(this.datasetInfo.size, seed.toString(), false)
+        })).shuffle(this.datasetInfo.size, seed.toString(), false) //shuffle the dataset
 
 
+        //split the dataset into train and valid set
         let trainSize = Math.round((1 - validationPercentage) * this.datasetInfo.size)
 
         this.trainingDataset = csvDataset.take(trainSize).batch(batchSize);
         this.trainingDataset = this.trainingDataset.map(x => ({ xs: { user: x.xs[userColumn].reshape([-1, 1]), item: x.xs[itemColumn].reshape([-1, 1]) }, ys: x.ys }))
 
-        this.validationDataset = csvDataset.skip(trainSize).batch(batchSize);
-        this.validationDataset = this.validationDataset.map(x => ({ xs: { user: x.xs[userColumn].reshape([-1, 1]), item: x.xs[itemColumn].reshape([-1, 1]) }, ys: x.ys }))
+        if (validationPercentage > 0) {
+            this.validationDataset = csvDataset.skip(trainSize).batch(batchSize);
+            this.validationDataset = this.validationDataset.map(x => ({ xs: { user: x.xs[userColumn].reshape([-1, 1]), item: x.xs[itemColumn].reshape([-1, 1]) }, ys: x.ys }))
+
+        }
     }
 
+    /*
+        Create a datablock from a tensors.
+        input the item, users, and ratings tensors
+    */
     fromTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number = 0, batchSize: number = 32, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null) {
         this.datasetInfo = { size: 0, usersNum: 0, itemsNum: 0 }
         this.datasetInfo.size = ratings.flatten().shape[0];
 
+        // shuffle the dataset
         let randomTen = Array.from(tf.util.createShuffledIndices(this.datasetInfo.size));
         items = items.reshape([-1, 1]).gather(randomTen);
         users = users.reshape([-1, 1]).gather(randomTen);
         ratings = ratings.flatten().gather(randomTen);
 
+        //train valid splitting
         if (validationPercentage > 0) {
             this.splitTrainValidTensor(items, users, ratings, validationPercentage)
         }
@@ -70,12 +87,18 @@ export class DataBlock {
 
     }
 
-
+    /*
+        Get some stats about a csv file.
+        mainly used in fromCsv method
+        returns datasetInfo object
+    */
     async getInfoOnCsv(path: string, userColumn: string, itemColumn: string) {
-        let datasetSize_ = new Promise<IdatasetInfo>(function (resolve, reject) {
+        let datasetInfo_ = new Promise<IdatasetInfo>(function (resolve, reject) {
             let csvInfo = { size: 0, usersNum: 0, itemsNum: 0 }
             let uniqueItems = new Set()
             let uniqueUsers = new Set()
+
+            //using the fast-csv
             csv.parseFile(path, { headers: true })
                 .on('error', error => console.error(error))
                 .on('data', (data) => {
@@ -87,12 +110,16 @@ export class DataBlock {
                     csvInfo.usersNum = uniqueUsers.size
                     csvInfo.itemsNum = uniqueItems.size
                     return resolve(csvInfo);
-                }
-                )
+                })
         });
-        return datasetSize_;
+        return datasetInfo_;
     }
 
+
+    /*
+        Split the tensors into training and validation set.
+        mainly used in fromTensor method
+    */
     splitTrainValidTensor(items, users, ratings, validationPercentage: number) {
         let trainSize: number = Math.round((1 - validationPercentage) * this.datasetInfo.size)
         let validSize: number = Math.abs(trainSize - this.datasetInfo.size)

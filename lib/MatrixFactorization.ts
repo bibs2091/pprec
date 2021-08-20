@@ -2,6 +2,10 @@ import { Embedding } from '@tensorflow/tfjs-layers/dist/layers/embeddings';
 import * as tf from '@tensorflow/tfjs-node'
 import { SigmoidRange } from './SigmoidRange'
 
+
+/*
+   MatrixFactorization allows you to create a matrix factorization model to be used in Learner.
+*/
 export class MatrixFactorization {
     userInputLayer; userEmbeddingLayer: Embedding; userEmbeddingLayerOutput; itemInputLayer; itemEmbeddingLayer; itemEmbeddingLayerOutput; dotLayer;
     model: tf.LayersModel;
@@ -41,8 +45,6 @@ export class MatrixFactorization {
             })
         }
         else{
-            console.log("i am not null");
-            
             this.userEmbeddingLayer = tf.layers.embedding({
                 inputDim: usersNum + 1,
                 outputDim: embeddingOutputSize,

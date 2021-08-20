@@ -1,8 +1,10 @@
-import { Embedding } from '@tensorflow/tfjs-layers/dist/layers/embeddings';
 import { MatrixFactorization } from './MatrixFactorization';
 import * as tf from '@tensorflow/tfjs-node'
 import { DataBlock } from './DataBlock'
-import { SigmoidRange } from './SigmoidRange'
+
+/*
+    Learner is an api which allows you to create, edit and train your model in few lines.
+*/
 export class Learner {
     itemsNum: number;
     usersNum: number;
@@ -12,12 +14,11 @@ export class Learner {
     optimizer: tf.Optimizer;
     trainingDataset: tf.data.Dataset<any>;
     validationDataset: tf.data.Dataset<any>;
-    userInputLayer; userEmbeddingLayer: Embedding; userEmbeddingLayerOutput; itemInputLayer; itemEmbeddingLayer; itemEmbeddingLayerOutput; dotLayer;
-    sigmoidLayer;
     model: tf.LayersModel;
     MFC: MatrixFactorization;
     ratingRange: number[];
     optimizerName: string;
+    
     constructor(dataBlock: DataBlock, learningRate: number = 1e-2, lossFunc: string = "meanSquaredError", optimizerName: string = "adam", embeddingOutputSize: number = 5, weightDecay: number = 0, options?: object) {
         this.itemsNum = dataBlock.datasetInfo.itemsNum;
         this.usersNum = dataBlock.datasetInfo.usersNum;
@@ -34,6 +35,9 @@ export class Learner {
     }
 
     
+    /*
+    To set the right optimizer for the model
+    */
     setOptimizer(optimizerName: string) {
         switch (optimizerName) {
             case "adam":
@@ -52,6 +56,9 @@ export class Learner {
         });
     }
 
+    /*
+    To train the model in a number of epoches
+    */
     fit(epochs: number = 1) {
         return this.model.fitDataset(this.trainingDataset, {
             validationData: this.validationDataset,
@@ -59,12 +66,18 @@ export class Learner {
         })
     }
 
-
+    /*
+        To recommend an Item for a user given their ID
+    */
     recommendItem(userId: number) {
         let toPredict = [tf.fill([this.itemsNum, 1], userId), tf.range(0, this.itemsNum).reshape([-1, 1])]
         return (this.model.predictOnBatch(toPredict) as tf.Tensor).argMax();
     }
 
+    /*
+        To add a new user embedding in the model.
+        The embedding is generated based on the mean of the other users latent factors.
+    */
     newUser() {
         this.usersNum += 1
         let userEmbeddingWeight = this.MFC.userEmbeddingLayer.getWeights()[0];
@@ -75,6 +88,10 @@ export class Learner {
         return this.usersNum //the new user ID
     }
 
+    /*
+        To add a new item embedding in the model.
+        The embedding is generated based on the mean of the other item latent factors.
+    */
     newItem() {
         this.itemsNum += 1
         let itemEmbeddingWeight = this.MFC.itemEmbeddingLayer.getWeights()[0];
@@ -85,6 +102,9 @@ export class Learner {
         return this.itemsNum //the new user ID
     }
 
+    /*
+       To save the architecture and the weights of the model in a given path
+    */
     save(path: string) {
         return this.model.save('file://' + path);
     }

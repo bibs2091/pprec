@@ -31,6 +31,28 @@ export class MatrixFactorization {
             })
         }
 
+        if (itemEmbeddingWeights == null) {
+            this.userEmbeddingLayer = tf.layers.embedding({
+                inputDim: usersNum + 1,
+                outputDim: embeddingOutputSize,
+                inputLength: 1,
+                name: "userEmbeddingLayer",
+                embeddingsRegularizer: tf.regularizers.l2({ l2: weightDecay })
+            })
+        }
+        else{
+            console.log("i am not null");
+            
+            this.userEmbeddingLayer = tf.layers.embedding({
+                inputDim: usersNum + 1,
+                outputDim: embeddingOutputSize,
+                inputLength: 1,
+                name: "userEmbeddingLayer",
+                embeddingsRegularizer: tf.regularizers.l2({ l2: weightDecay }),
+                weights: itemEmbeddingWeights
+            })
+        }
+
 
         this.userEmbeddingLayerOutput = tf.layers.flatten({ name: "flat1" }).apply(this.userEmbeddingLayer.apply(this.userInputLayer));
 

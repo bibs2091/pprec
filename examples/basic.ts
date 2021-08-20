@@ -10,9 +10,13 @@ async function main() {
     // IMDB.fromTensor(tf.tensor([1, 2, 3, 4]), tf.tensor([1, 2, 3, 4]), tf.tensor([1, 2, 3, 4]))
 
     let learner = new Learner(IMDB, 5e-3);
-    await learner.fit(1);
+    // await learner.fit(1);
     let newUserID = learner.newUser()
     console.log("the new user id is:"  + newUserID);
+
+    let newItemID = learner.newItem()
+    console.log("the new item id is:"  + newItemID);
+
     await learner.fit(1);
     learner.recommendItem(10).print();
 

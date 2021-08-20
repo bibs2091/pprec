@@ -11,7 +11,8 @@ async function main() {
 
     let learner = new Learner(IMDB, 5e-3);
     await learner.fit(1);
-    learner.newUser()
+    let newUserID = learner.newUser()
+    console.log("the new user id is:"  + newUserID);
     await learner.fit(1);
     learner.recommendItem(10).print();
 

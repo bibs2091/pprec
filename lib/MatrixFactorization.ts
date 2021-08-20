@@ -9,17 +9,26 @@ export class MatrixFactorization {
 
     constructor(usersNum: number, itemsNum: number, embeddingOutputSize: number, weightDecay: number, ratingRange?: number[], userEmbeddingWeights?, itemEmbeddingWeights?) {
         this.userInputLayer = tf.input({ shape: [1], dtype: "int32", name: "user" });
-        this.userEmbeddingLayer = tf.layers.embedding({
-            inputDim: usersNum + 1,
-            outputDim: embeddingOutputSize,
-            inputLength: 1,
-            name: "userEmbeddingLayer",
-            embeddingsRegularizer: tf.regularizers.l2({ l2: weightDecay })
-        })
+        
 
-        if (userEmbeddingWeights != null) {
-            console.log(userEmbeddingWeights);
-            this.userEmbeddingLayer.setWeights(userEmbeddingWeights)
+        if (userEmbeddingWeights == null) {
+            this.userEmbeddingLayer = tf.layers.embedding({
+                inputDim: usersNum + 1,
+                outputDim: embeddingOutputSize,
+                inputLength: 1,
+                name: "userEmbeddingLayer",
+                embeddingsRegularizer: tf.regularizers.l2({ l2: weightDecay })
+            })
+        }
+        else{
+            this.userEmbeddingLayer = tf.layers.embedding({
+                inputDim: usersNum + 1,
+                outputDim: embeddingOutputSize,
+                inputLength: 1,
+                name: "userEmbeddingLayer",
+                embeddingsRegularizer: tf.regularizers.l2({ l2: weightDecay }),
+                weights: userEmbeddingWeights
+            })
         }
 
 

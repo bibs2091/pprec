@@ -66,11 +66,13 @@ export class Learner {
     }
 
     newUser() {
-        this.usersNum = 10
-        let userEmbeddingWeight = this.MFC.itemEmbeddingLayer.getWeights();
-        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange);
+        this.usersNum += 1
+        let userEmbeddingWeight = this.MFC.userEmbeddingLayer.getWeights()[0];
+        userEmbeddingWeight = tf.concat([userEmbeddingWeight,userEmbeddingWeight.mean(0).reshape([1,this.embeddingOutputSize])]);
+        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange,[userEmbeddingWeight]);
         this.model = this.MFC.model;
         this.setOptimizer(this.optimizerName);
+        return this.usersNum //the new user ID
     }
     save(path: string) {
         return this.model.save('file://' + path);

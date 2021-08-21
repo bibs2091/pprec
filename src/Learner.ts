@@ -16,7 +16,7 @@ export class Learner {
     validationDataset: tf.data.Dataset<any>;
     model: tf.LayersModel;
     MFC: MatrixFactorization;
-    ratingRange: number[];
+    ratingRange?: number[];
     optimizerName: string;
     
     constructor(dataBlock: DataBlock, learningRate: number = 1e-2, lossFunc: string = "meanSquaredError", optimizerName: string = "adam", embeddingOutputSize: number = 5, weightDecay: number = 0, options?: object) {

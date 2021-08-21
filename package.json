@@ -1,10 +1,10 @@
 {
-  "name": "pfe",
-  "version": "1.0.0",
-  "description": "",
-  "main": "app.js",
+  "name": "pprec",
+  "version": "0.0.1",
+  "description": "privacy preserving RS",
+  "types": "dir",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc -p ."
   },
   "author": "",
   "license": "ISC",

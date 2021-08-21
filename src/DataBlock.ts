@@ -5,6 +5,15 @@ interface IdatasetInfo {
     size: number; usersNum: number; itemsNum: number;
 }
 
+interface Idataset {
+    xs: {
+        user: tf.Tensor;
+        item: tf.Tensor;
+    }
+    ys: {
+        rating: tf.Tensor;
+    }
+}
 
 /*
     DataBlock is an api which allows you to generate and manupilate your dataset.
@@ -14,13 +23,13 @@ export class DataBlock {
     trainingDataset: tf.data.Dataset<any>;
     validationDataset: tf.data.Dataset<any>;
     datasetInfo: IdatasetInfo;
-    ratingRange: null | number[];
+    ratingRange?: number[];
 
     /*
         Create a datablock from a csv file.
         You should define the name of the columns which contain the corresponding data 
     */
-    async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, validationPercentage: number = 0.2, delimiter: string = ',', batchSize: number = 16, ratingRange: null | number[] = null, seed: number = 42, options?: object) {
+    async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, validationPercentage: number = 0.2, delimiter: string = ',', batchSize: number = 16,  seed: number = 42, ratingRange?: number[], options?: object) {
         let myPath = "file://" + path;
         this.datasetInfo = await this.getInfoOnCsv(path, userColumn, itemColumn)
         this.ratingRange = ratingRange;
@@ -49,11 +58,11 @@ export class DataBlock {
         let trainSize = Math.round((1 - validationPercentage) * this.datasetInfo.size)
 
         this.trainingDataset = csvDataset.take(trainSize).batch(batchSize);
-        this.trainingDataset = this.trainingDataset.map(x => ({ xs: { user: x.xs[userColumn].reshape([-1, 1]), item: x.xs[itemColumn].reshape([-1, 1]) }, ys: x.ys }))
+        this.trainingDataset = this.trainingDataset.map((x: Idataset) => ({ xs: { user: x.xs[userColumn].reshape([-1, 1]), item: x.xs[itemColumn].reshape([-1, 1]) }, ys: x.ys }))
 
         if (validationPercentage > 0) {
             this.validationDataset = csvDataset.skip(trainSize).batch(batchSize);
-            this.validationDataset = this.validationDataset.map(x => ({ xs: { user: x.xs[userColumn].reshape([-1, 1]), item: x.xs[itemColumn].reshape([-1, 1]) }, ys: x.ys }))
+            this.validationDataset = this.validationDataset.map((x : Idataset) => ({ xs: { user: x.xs[userColumn].reshape([-1, 1]), item: x.xs[itemColumn].reshape([-1, 1]) }, ys: x.ys }))
 
         }
     }
@@ -77,7 +86,7 @@ export class DataBlock {
             this.splitTrainValidTensor(items, users, ratings, validationPercentage)
         }
         else {
-            let psuedoTrainingDataset = []
+            let psuedoTrainingDataset:  tf.TensorContainer[]= []
             for (let i = 0; i < ratings.shape[0]; i++) {
                 psuedoTrainingDataset.push({ xs: { user: users.slice(i, 1), item: items.slice(i, 1) }, ys: { rating: ratings.slice(i) } })
             }
@@ -127,17 +136,17 @@ export class DataBlock {
         let [trainingUsers, validationUsers] = tf.split(users, [trainSize, validSize], 0);
         let [trainingRatings, validationRatings] = tf.split(ratings, [trainSize, validSize], 0);
 
-        let psuedoTrainingDataset = []
+        let psuedoTrainingDataset: tf.TensorContainer[]= []
         for (let i = 0; i < trainingRatings.shape[0]; i++) {
             psuedoTrainingDataset.push({ xs: { user: trainingUsers.slice(i, 1), item: trainingItems.slice(i, 1) }, ys: { rating: trainingRatings.slice(i) } })
         }
-        this.trainingDataset = tf.data.array(psuedoTrainingDataset)
+        this.trainingDataset = tf.data.array((psuedoTrainingDataset))
 
 
-        let psuedoValidationDataset = []
+        let psuedoValidationDataset: tf.TensorContainer[] = []
         for (let i = 0; i < validationRatings.shape[0]; i++) {
             psuedoValidationDataset.push({ xs: { user: validationUsers.slice(i, 1), item: validationItems.slice(i, 1) }, ys: { rating: validationRatings.slice(i) } })
         }
-        this.validationDataset = tf.data.array(psuedoValidationDataset)
+        this.validationDataset = tf.data.array((psuedoValidationDataset))
     }
 }

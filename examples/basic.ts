@@ -1,5 +1,5 @@
-import { DataBlock } from '../lib/DataBlock'
-import { Learner } from '../lib/Learner'
+import { DataBlock } from '../src/DataBlock'
+import { Learner } from '../src/Learner'
 
 
 async function main() {

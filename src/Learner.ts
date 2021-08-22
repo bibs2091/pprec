@@ -1,7 +1,7 @@
 import { MatrixFactorization } from './MatrixFactorization';
 import * as tf from '@tensorflow/tfjs-node'
 import { DataBlock } from './DataBlock'
-
+import { cosineSimilarity } from './utils'
 /*
     Learner is an api which allows you to create, edit and train your model in few lines.
 */
@@ -18,7 +18,7 @@ export class Learner {
     MFC: MatrixFactorization;
     ratingRange?: number[];
     optimizerName: string;
-    
+
     constructor(dataBlock: DataBlock, learningRate: number = 1e-2, lossFunc: string = "meanSquaredError", optimizerName: string = "adam", embeddingOutputSize: number = 5, weightDecay: number = 0, options?: object) {
         this.itemsNum = dataBlock.datasetInfo.itemsNum;
         this.usersNum = dataBlock.datasetInfo.usersNum;
@@ -28,13 +28,13 @@ export class Learner {
         this.validationDataset = dataBlock.validationDataset;
         this.embeddingOutputSize = embeddingOutputSize;
         this.ratingRange = dataBlock.ratingRange
-        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, weightDecay, this.ratingRange );
+        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, weightDecay, this.ratingRange);
         this.model = this.MFC.model;
         this.optimizerName = optimizerName
         this.setOptimizer(this.optimizerName);
     }
 
-    
+
     /*
     To set the right optimizer for the model
     */
@@ -81,8 +81,8 @@ export class Learner {
     newUser() {
         this.usersNum += 1
         let userEmbeddingWeight = this.MFC.userEmbeddingLayer.getWeights()[0];
-        userEmbeddingWeight = tf.concat([userEmbeddingWeight,userEmbeddingWeight.mean(0).reshape([1,this.embeddingOutputSize])]);
-        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange,[userEmbeddingWeight]);
+        userEmbeddingWeight = tf.concat([userEmbeddingWeight, userEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
+        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, [userEmbeddingWeight]);
         this.model = this.MFC.model;
         this.setOptimizer(this.optimizerName);
         return this.usersNum //the new user ID
@@ -95,12 +95,26 @@ export class Learner {
     newItem() {
         this.itemsNum += 1
         let itemEmbeddingWeight = this.MFC.itemEmbeddingLayer.getWeights()[0];
-        itemEmbeddingWeight = tf.concat([itemEmbeddingWeight,itemEmbeddingWeight.mean(0).reshape([1,this.embeddingOutputSize])]);
-        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange,itemEmbeddingWeight=[itemEmbeddingWeight]);
+        itemEmbeddingWeight = tf.concat([itemEmbeddingWeight, itemEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
+        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, itemEmbeddingWeight = [itemEmbeddingWeight]);
         this.model = this.MFC.model;
         this.setOptimizer(this.optimizerName);
         return this.itemsNum //the new user ID
     }
+
+
+
+    /*
+       To retrieve the k similar users of a user 
+    */
+    mostSimilarUsers(id: number, k = 10) {
+        let userEmbeddingWeight = this.MFC.userEmbeddingLayer.getWeights()[0];
+        let similarity = cosineSimilarity(userEmbeddingWeight, userEmbeddingWeight.slice(id, 1))
+        let {values, indices} = tf.topk(similarity, k + 1);
+        let indicesArray = (indices.arraySync() as number[])
+        return indicesArray.filter((e: number) => e !== id)
+    }
+
 
     /*
        To save the architecture and the weights of the model in a given path

@@ -115,6 +115,16 @@ export class Learner {
         return indicesArray.filter((e: number) => e !== id)
     }
 
+    /*
+       To retrieve the k similar items of an item 
+    */
+       mostSimilarItems(id: number, k = 10) {
+        let itemEmbeddingWeight = this.MFC.itemEmbeddingLayer.getWeights()[0];
+        let similarity = cosineSimilarity(itemEmbeddingWeight, itemEmbeddingWeight.slice(id, 1))
+        let {values, indices} = tf.topk(similarity, k + 1);
+        let indicesArray = (indices.arraySync() as number[])
+        return indicesArray.filter((e: number) => e !== id)
+    }
 
     /*
        To save the architecture and the weights of the model in a given path

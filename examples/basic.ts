@@ -11,7 +11,7 @@ async function main() {
 
     learner.recommendItem(10).print(); // recommend an item for the user with ID = 10
     console.log(learner.mostSimilarUsers(10)); //get the similar 10 users to user with ID = 10
-
+    console.log(learner.mostSimilarItems(313)); //get the similar 10 users to user with ID = 10
     learner.save("myModel"); // saving the model
 }
 

@@ -1,11 +1,13 @@
 {
   "name": "pprec",
-  "version": "0.0.1",
+  "version": "0.0.23",
   "description": "privacy preserving RS",
   "types": "dir",
+  "main": "dir/main.js",
   "scripts": {
     "build": "tsc -p ."
   },
+  "files": [ "dir" ],
   "author": "",
   "license": "ISC",
   "dependencies": {

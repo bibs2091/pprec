@@ -1,14 +1,16 @@
 {
   "name": "pprec",
-  "version": "0.0.23",
-  "description": "privacy preserving RS",
+  "version": "0.0.25",
+  "description": "a privacy preserving recommendation system package based on matrix factorization",
   "types": "dir",
   "main": "dir/main.js",
   "scripts": {
     "build": "tsc -p ."
   },
-  "files": [ "dir" ],
-  "author": "",
+  "files": [
+    "dir"
+  ],
+  "author": "Mohamed NAAS",
   "license": "ISC",
   "dependencies": {
     "@fast-csv/parse": "^4.3.6",
@@ -21,5 +23,18 @@
     "ts-node": "^10.1.0",
     "tslib": "^2.3.0",
     "typescript": "^4.3.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bibs2091/pprec.git"
+  },
+  "keywords": [
+    "privacy",
+    "preserving",
+    "ai"
+  ],
+  "bugs": {
+    "url": "https://github.com/bibs2091/pprec/issues"
+  },
+  "homepage": "https://github.com/bibs2091/pprec#readme"
 }

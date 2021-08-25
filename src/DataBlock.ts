@@ -1,6 +1,5 @@
 import * as tf from '@tensorflow/tfjs-node'
 import * as csv from '@fast-csv/parse';
-
 interface IdatasetInfo {
     size: number; usersNum: number; itemsNum: number;
 }
@@ -29,7 +28,7 @@ export class DataBlock {
         Create a datablock from a csv file.
         You should define the name of the columns which contain the corresponding data 
     */
-    async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, validationPercentage: number = 0.2, delimiter: string = ',', batchSize: number = 16,  seed: number = 42, ratingRange?: number[], options?: object) {
+    async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, validationPercentage: number = 0.2, delimiter: string = ',', batchSize: number = 1,  seed: number = 42, ratingRange?: number[], options?: object) {
         let myPath = "file://" + path;
         this.datasetInfo = await this.getInfoOnCsv(path, userColumn, itemColumn)
         this.ratingRange = ratingRange;

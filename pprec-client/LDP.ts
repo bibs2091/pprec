@@ -6,13 +6,13 @@ export function generelizedRandomResponse(x: number, ratingRange: number[], epsi
         if (i == x) probablities.push(p)
         else probablities.push(q)
     }
-    let result: number = weightedChoice(probablities)[0];
+    let result: number = weightedChoice(probablities);
     return result;
 
 }
 
 
-function weightedChoice(p: number[]) {
+function weightedChoice(p: number[]): number {
     let rnd = p.reduce((a, b) => a + b) * Math.random();
     return p.findIndex(a => (rnd -= a) < 0);
 }

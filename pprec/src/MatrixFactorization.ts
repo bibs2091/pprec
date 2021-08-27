@@ -13,7 +13,8 @@ export class MatrixFactorization {
 
     constructor(usersNum: number, itemsNum: number, embeddingOutputSize: number, weightDecay: number, ratingRange?: number[], userEmbeddingWeights?, itemEmbeddingWeights?) {
         this.userInputLayer = tf.input({ shape: [1], dtype: "int32", name: "user" });
-        
+        this.itemInputLayer = tf.input({ shape: [1], dtype: "int32", name: "item" });
+
 
         if (userEmbeddingWeights == null) {
             this.userEmbeddingLayer = tf.layers.embedding({
@@ -24,7 +25,7 @@ export class MatrixFactorization {
                 embeddingsRegularizer: tf.regularizers.l2({ l2: weightDecay })
             })
         }
-        else{
+        else {
             this.userEmbeddingLayer = tf.layers.embedding({
                 inputDim: usersNum + 1,
                 outputDim: embeddingOutputSize,
@@ -36,20 +37,20 @@ export class MatrixFactorization {
         }
 
         if (itemEmbeddingWeights == null) {
-            this.userEmbeddingLayer = tf.layers.embedding({
-                inputDim: usersNum + 1,
+            this.itemEmbeddingLayer = tf.layers.embedding({
+                inputDim: itemsNum + 1,
                 outputDim: embeddingOutputSize,
                 inputLength: 1,
-                name: "userEmbeddingLayer",
+                name: "itemEmbeddingLayer",
                 embeddingsRegularizer: tf.regularizers.l2({ l2: weightDecay })
             })
         }
-        else{
-            this.userEmbeddingLayer = tf.layers.embedding({
-                inputDim: usersNum + 1,
+        else {
+            this.itemEmbeddingLayer = tf.layers.embedding({
+                inputDim: itemsNum + 1,
                 outputDim: embeddingOutputSize,
                 inputLength: 1,
-                name: "userEmbeddingLayer",
+                name: "itemEmbeddingLayer",
                 embeddingsRegularizer: tf.regularizers.l2({ l2: weightDecay }),
                 weights: itemEmbeddingWeights
             })
@@ -57,17 +58,8 @@ export class MatrixFactorization {
 
 
         this.userEmbeddingLayerOutput = tf.layers.flatten({ name: "flat1" }).apply(this.userEmbeddingLayer.apply(this.userInputLayer));
-
-        this.itemInputLayer = tf.input({ shape: [1], dtype: "int32", name: "item" });
-        this.itemEmbeddingLayer = tf.layers.embedding({
-            inputDim: itemsNum + 1,
-            outputDim: embeddingOutputSize,
-            inputLength: 1,
-            name: "itemEmbeddingLayer",
-            embeddingsRegularizer: tf.regularizers.l2({ l2: weightDecay })
-        })
         this.itemEmbeddingLayerOutput = tf.layers.flatten({ name: "flat2" }).apply(this.itemEmbeddingLayer.apply(this.itemInputLayer));
-
+       
         // if user did not specify a range for the ratings
         if (ratingRange == null) {
             this.dotLayer = tf.layers.dot({ axes: -1, name: "rating" }).apply([this.userEmbeddingLayerOutput, this.itemEmbeddingLayerOutput]);
@@ -80,5 +72,6 @@ export class MatrixFactorization {
             this.sigmoidLayer = new SigmoidRange({ high: ratingRange[1], low: ratingRange[0], name: "rating" }).apply(this.dotLayer)
             this.model = tf.model({ inputs: [this.userInputLayer, this.itemInputLayer], outputs: this.sigmoidLayer });
         }
+        this.model.summary()
     }
 }

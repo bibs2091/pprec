@@ -1,6 +1,6 @@
 pprec/node_modules
-pprec-client/node_modules
+pprec-private/node_modules
 .vscode
 myModel
 pprec/dir
-pprec-client/dir
+pprec-private/dir

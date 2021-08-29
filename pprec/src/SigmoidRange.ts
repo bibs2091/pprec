@@ -14,7 +14,7 @@ export class SigmoidRange extends tf.layers.Layer {
 
 
     call(inputs: tf.Tensor | tf.Tensor[], kwargs: any): tf.Tensor | tf.Tensor[] {
-        const x = tf.sigmoid(getExactlyOneTensor(inputs)).mul(this.high - this.low).sub(this.low);
+        const x = tf.sigmoid(getExactlyOneTensor(inputs)).mul(this.high - this.low).add(this.low);
         return x
     }
 

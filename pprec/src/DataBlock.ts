@@ -28,7 +28,7 @@ export class DataBlock {
         Create a datablock from a csv file.
         You should define the name of the columns which contain the corresponding data 
     */
-    async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, validationPercentage: number = 0.2, delimiter: string = ',', batchSize: number = 1,  seed: number = 42, ratingRange?: number[], options?: object) {
+    async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, batchSize: number = 64, ratingRange?: number[], validationPercentage: number = 0.1, delimiter: string = ',',  seed: number = 42,  options?: object) {
         let myPath = "file://" + path;
         this.datasetInfo = await this.getInfoOnCsv(path, userColumn, itemColumn)
         this.ratingRange = ratingRange;

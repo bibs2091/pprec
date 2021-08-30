@@ -1,7 +1,7 @@
 import { MatrixFactorization } from './MatrixFactorization';
 import * as tf from '@tensorflow/tfjs-node'
 import { DataBlock } from './DataBlock'
-import { cosineSimilarity } from './utils'
+import { cosineSimilarity,euclideandistance} from './utils'
 /*
     Learner is an api which allows you to create, edit and train your model in few lines.
 */
@@ -120,7 +120,7 @@ export class Learner {
     */
        mostSimilarItems(id: number, k = 10) {
         let itemEmbeddingWeight = this.MFC.itemEmbeddingLayer.getWeights()[0];
-        let similarity = cosineSimilarity(itemEmbeddingWeight, itemEmbeddingWeight.slice(id, 1))
+        let similarity = euclideandistance(itemEmbeddingWeight, itemEmbeddingWeight.slice(id, 1))
         let {values, indices} = tf.topk(similarity, k + 1);
         let indicesArray = (indices.arraySync() as number[])
         return indicesArray.filter((e: number) => e !== id)

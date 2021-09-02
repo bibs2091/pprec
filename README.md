@@ -1,11 +1,12 @@
 # pprec
-A privacy preserving recommender system node-js package
+A recommender system package, easy to use in your node-js application. PPREC can also preserve the privacy of the users data.
 
 To run the project you only need to install the package in your project:
 ```
 npm install pprec
 ```
-# Example
+# Usage
+
 ```
 import { DataBlock, Learner } from 'pprec';
 
@@ -18,6 +19,10 @@ async function main() {
 
     //train the model for 3 epoches
     await learner.fit(3);
+
+    //add a new rating in the dataset user id = 5, item id = 10 and with a rating = 2.
+    learner.addRating(5, 10, 2) 
+
 
     // recommend an item for the user with ID = 10
     learner.recommendItem(10).print(); 
@@ -38,7 +43,7 @@ main()
 The current progress:
 - [x] Learner 
 - [x] DataBlock
-- [ ] Local DP
+- [x] Local DP
 - [ ] Documentation
 - [ ] Contribution guide
 - [ ] Output DP

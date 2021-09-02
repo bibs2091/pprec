@@ -100,7 +100,7 @@ export class DataBlock {
         mainly used in fromCsv method
         returns datasetInfo object
     */
-    async getInfoOnCsv(path: string, userColumn: string, itemColumn: string) {
+    getInfoOnCsv(path: string, userColumn: string, itemColumn: string) {
         let datasetInfo_ = new Promise<IdatasetInfo>(function (resolve, reject) {
             let csvInfo = { size: 0, usersNum: 0, itemsNum: 0 }
             let uniqueItems = new Set()

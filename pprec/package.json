@@ -1,7 +1,7 @@
 {
   "name": "pprec",
-  "version": "0.0.25",
-  "description": "a privacy preserving recommendation system package based on matrix factorization",
+  "version": "0.0.3",
+  "description": "a recommendation system engine for web applications with the ability to preserve privacy",
   "types": "dir",
   "main": "dir/main.js",
   "scripts": {

@@ -74,10 +74,31 @@ export class Learner {
         return (this.model.predictOnBatch(toPredict) as tf.Tensor).argMax();
     }
 
-    addRating(userId: number, itemId: number, rating: number) {
-        let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), movie: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } }, ])
+    addRating(userId: number, itemId: number, rating: number, train: boolean = true) {
+        let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } }, ])
         this.trainingDataset = this.trainingDataset.concatenate(toAdd);
-      }
+
+        if (train){
+            return this.model.fitDataset(toAdd, {
+                epochs: 1,
+                verbose: 0
+            })
+        }
+    }
+
+
+    async addRatingSync(userId: number, itemId: number, rating: number, train: boolean = true) {
+        let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } }, ])
+        this.trainingDataset = this.trainingDataset.concatenate(toAdd);
+
+        if (train){
+            await this.model.fitDataset(toAdd, {
+                epochs: 1,
+                verbose: 0
+            })
+        }
+    }
+
 
     /*
         To add a new user embedding in the model.

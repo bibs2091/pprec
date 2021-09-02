@@ -74,6 +74,11 @@ export class Learner {
         return (this.model.predictOnBatch(toPredict) as tf.Tensor).argMax();
     }
 
+    addRating(userId: number, itemId: number, rating: number) {
+        let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), movie: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } }, ])
+        this.trainingDataset = this.trainingDataset.concatenate(toAdd);
+      }
+
     /*
         To add a new user embedding in the model.
         The embedding is generated based on the mean of the other users latent factors.

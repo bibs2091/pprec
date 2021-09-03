@@ -1,7 +1,9 @@
 import { MatrixFactorization } from './MatrixFactorization';
 import * as tf from '@tensorflow/tfjs-node'
 import { DataBlock } from './DataBlock'
-import { cosineSimilarity,euclideandistance} from './utils'
+import { cosineSimilarity, euclideandistance } from './utils'
+import { ValueError } from './errors'
+
 /*
     Learner is an api which allows you to create, edit and train your model in few lines.
 */
@@ -39,6 +41,7 @@ export class Learner {
     To set the right optimizer for the model
     */
     setOptimizer(optimizerName: string) {
+
         switch (optimizerName) {
             case "adam":
                 this.optimizer = tf.train.adam(this.learningRate);
@@ -49,6 +52,9 @@ export class Learner {
             case "rmsprop":
                 this.optimizer = tf.train.rmsprop(this.learningRate);
                 break;
+            default:
+                throw new ValueError(`${optimizerName} optimzer does not exist in pprec. Only adam, sgd, and rmsprop are supported (lower case)`);
+
         }
         this.model.compile({
             optimizer: this.optimizer,
@@ -75,10 +81,10 @@ export class Learner {
     }
 
     addRating(userId: number, itemId: number, rating: number, train: boolean = true) {
-        let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } }, ])
+        let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } },])
         this.trainingDataset = this.trainingDataset.concatenate(toAdd);
 
-        if (train){
+        if (train) {
             return this.model.fitDataset(toAdd, {
                 epochs: 1,
                 verbose: 0
@@ -88,10 +94,10 @@ export class Learner {
 
 
     async addRatingSync(userId: number, itemId: number, rating: number, train: boolean = true) {
-        let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } }, ])
+        let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } },])
         this.trainingDataset = this.trainingDataset.concatenate(toAdd);
 
-        if (train){
+        if (train) {
             await this.model.fitDataset(toAdd, {
                 epochs: 1,
                 verbose: 0
@@ -134,9 +140,10 @@ export class Learner {
        To retrieve the k similar users of a user 
     */
     mostSimilarUsers(id: number, k = 10) {
+        if (k < 1) throw new ValueError(`the k in mostSimilarUsers >= 1`);
         let userEmbeddingWeight = this.MFC.userEmbeddingLayer.getWeights()[0];
         let similarity = cosineSimilarity(userEmbeddingWeight, userEmbeddingWeight.slice(id, 1))
-        let {values, indices} = tf.topk(similarity, k + 1);
+        let { values, indices } = tf.topk(similarity, k + 1);
         let indicesArray = (indices.arraySync() as number[])
         return indicesArray.filter((e: number) => e !== id)
     }
@@ -144,10 +151,11 @@ export class Learner {
     /*
        To retrieve the k similar items of an item 
     */
-       mostSimilarItems(id: number, k = 10) {
+    mostSimilarItems(id: number, k = 10) {
+        if (k < 1) throw new ValueError(`the k in mostSimilarItems >= 1`);
         let itemEmbeddingWeight = this.MFC.itemEmbeddingLayer.getWeights()[0];
         let similarity = euclideandistance(itemEmbeddingWeight, itemEmbeddingWeight.slice(id, 1))
-        let {values, indices} = tf.topk(similarity, k + 1);
+        let { values, indices } = tf.topk(similarity, k + 1);
         let indicesArray = (indices.arraySync() as number[])
         return indicesArray.filter((e: number) => e !== id)
     }

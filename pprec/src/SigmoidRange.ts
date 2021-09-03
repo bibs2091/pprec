@@ -1,4 +1,5 @@
 import * as tf from '@tensorflow/tfjs-node'
+import {ValueError} from './errors'
 
 /*
    SigmoidRange is a custom layer to bound the output of the model in a certain range to speed up the training speed.
@@ -8,8 +9,15 @@ export class SigmoidRange extends tf.layers.Layer {
     low: number;
     constructor(config) {
         super(config);
+
+        if (this.low > this.high) {
+          throw new ValueError(`SigmoidRange max can not be smaller or equal to min`);
+        }
+
         this.high = config.high;
         this.low = config.low;
+        
+        
     }
 
 

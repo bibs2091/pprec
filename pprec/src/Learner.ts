@@ -3,6 +3,7 @@ import * as tf from '@tensorflow/tfjs-node'
 import { DataBlock } from './DataBlock'
 import { cosineSimilarity, euclideandistance } from './utils'
 import { ValueError } from './errors'
+import { io } from '@tensorflow/tfjs-core';
 
 /*
     Learner is an api which allows you to create, edit and train your model in few lines.
@@ -65,7 +66,7 @@ export class Learner {
     /*
     To train the model in a number of epoches
     */
-    fit(epochs: number = 1) {
+    fit(epochs: number = 1): Promise<tf.History>   {
         return this.model.fitDataset(this.trainingDataset, {
             validationData: this.validationDataset,
             epochs: epochs,
@@ -75,12 +76,12 @@ export class Learner {
     /*
         To recommend an Item for a user given their ID
     */
-    recommendItem(userId: number) {
+    recommendItem(userId: number): tf.Tensor  {
         let toPredict = [tf.fill([this.itemsNum, 1], userId), tf.range(0, this.itemsNum).reshape([-1, 1])]
         return (this.model.predictOnBatch(toPredict) as tf.Tensor).argMax();
     }
 
-    addRating(userId: number, itemId: number, rating: number, train: boolean = true) {
+    addRating(userId: number, itemId: number, rating: number, train: boolean = true): void | Promise<tf.History> {
         let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } },])
         this.trainingDataset = this.trainingDataset.concatenate(toAdd);
 
@@ -110,7 +111,7 @@ export class Learner {
         To add a new user embedding in the model.
         The embedding is generated based on the mean of the other users latent factors.
     */
-    newUser() {
+    newUser(): number {
         this.usersNum += 1
         let userEmbeddingWeight = this.MFC.userEmbeddingLayer.getWeights()[0];
         userEmbeddingWeight = tf.concat([userEmbeddingWeight, userEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
@@ -139,7 +140,7 @@ export class Learner {
     /*
        To retrieve the k similar users of a user 
     */
-    mostSimilarUsers(id: number, k = 10) {
+    mostSimilarUsers(id: number, k = 10): number[] {
         if (k < 1) throw new ValueError(`the k in mostSimilarUsers >= 1`);
         let userEmbeddingWeight = this.MFC.userEmbeddingLayer.getWeights()[0];
         let similarity = cosineSimilarity(userEmbeddingWeight, userEmbeddingWeight.slice(id, 1))
@@ -151,7 +152,7 @@ export class Learner {
     /*
        To retrieve the k similar items of an item 
     */
-    mostSimilarItems(id: number, k = 10) {
+    mostSimilarItems(id: number, k = 10): number[] {
         if (k < 1) throw new ValueError(`the k in mostSimilarItems >= 1`);
         let itemEmbeddingWeight = this.MFC.itemEmbeddingLayer.getWeights()[0];
         let similarity = euclideandistance(itemEmbeddingWeight, itemEmbeddingWeight.slice(id, 1))
@@ -163,11 +164,11 @@ export class Learner {
     /*
        To save the architecture and the weights of the model in a given path
     */
-    save(path: string) {
+    save(path: string): Promise<io.SaveResult> {
         return this.model.save('file://' + path);
     }
 
-    load(path: string) {
+    load(path: string): Promise<tf.LayersModel> {
         return tf.loadLayersModel('file://' + path);
     }
 }

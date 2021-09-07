@@ -70,7 +70,7 @@ export class DataBlock {
         Create a datablock from a tensors.
         input the item, users, and ratings tensors
     */
-    fromTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number = 0, batchSize: number = 32, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null) {
+    fromTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number = 0, batchSize: number = 32, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null): void {
         this.datasetInfo = { size: 0, usersNum: 0, itemsNum: 0 }
         this.datasetInfo.size = ratings.flatten().shape[0];
 
@@ -100,7 +100,7 @@ export class DataBlock {
         mainly used in fromCsv method
         returns datasetInfo object
     */
-    getInfoOnCsv(path: string, userColumn: string, itemColumn: string) {
+    getInfoOnCsv(path: string, userColumn: string, itemColumn: string): Promise<IdatasetInfo> {
         let datasetInfo_ = new Promise<IdatasetInfo>(function (resolve, reject) {
             let csvInfo = { size: 0, usersNum: 0, itemsNum: 0 }
             let uniqueItems = new Set()
@@ -128,7 +128,7 @@ export class DataBlock {
         Split the tensors into training and validation set.
         mainly used in fromTensor method
     */
-    splitTrainValidTensor(items, users, ratings, validationPercentage: number) {
+    splitTrainValidTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number): void {
         let trainSize: number = Math.round((1 - validationPercentage) * this.datasetInfo.size)
         let validSize: number = Math.abs(trainSize - this.datasetInfo.size)
         let [trainingItems, validationItems] = tf.split(items, [trainSize, validSize], 0);

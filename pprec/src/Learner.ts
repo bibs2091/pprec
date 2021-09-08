@@ -15,22 +15,20 @@ export class Learner {
     lossFunc: string;
     embeddingOutputSize: number;
     optimizer: tf.Optimizer;
-    trainingDataset: tf.data.Dataset<any>;
-    validationDataset: tf.data.Dataset<any>;
     model: tf.LayersModel;
     MFC: MatrixFactorization;
     ratingRange?: number[];
     optimizerName: string;
+    dataBlock: DataBlock;
 
     constructor(dataBlock: DataBlock, learningRate: number = 1e-2, lossFunc: string = "meanSquaredError", optimizerName: string = "adam", embeddingOutputSize: number = 5, weightDecay: number = 0, options?: object) {
-        this.itemsNum = dataBlock.datasetInfo.itemsNum;
-        this.usersNum = dataBlock.datasetInfo.usersNum;
+        this.dataBlock = dataBlock;
+        this.itemsNum = this.dataBlock.datasetInfo.itemsNum;
+        this.usersNum = this.dataBlock.datasetInfo.usersNum;
         this.lossFunc = lossFunc;
         this.learningRate = learningRate;
-        this.trainingDataset = dataBlock.trainingDataset;
-        this.validationDataset = dataBlock.validationDataset;
         this.embeddingOutputSize = embeddingOutputSize;
-        this.ratingRange = dataBlock.ratingRange
+        this.ratingRange = this.dataBlock.ratingRange
         this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, weightDecay, this.ratingRange);
         this.model = this.MFC.model;
         this.optimizerName = optimizerName
@@ -67,8 +65,8 @@ export class Learner {
     To train the model in a number of epoches
     */
     fit(epochs: number = 1): Promise<tf.History>   {
-        return this.model.fitDataset(this.trainingDataset, {
-            validationData: this.validationDataset,
+        return this.model.fitDataset(this.dataBlock.trainingDataset, {
+            validationData: this.dataBlock.validationDataset,
             epochs: epochs,
         })
     }
@@ -83,7 +81,7 @@ export class Learner {
 
     addRating(userId: number, itemId: number, rating: number, train: boolean = true): void | Promise<tf.History> {
         let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } },])
-        this.trainingDataset = this.trainingDataset.concatenate(toAdd);
+        this.dataBlock.trainingDataset = this.dataBlock.trainingDataset.concatenate(toAdd);
 
         if (train) {
             return this.model.fitDataset(toAdd, {
@@ -96,7 +94,7 @@ export class Learner {
 
     async addRatingSync(userId: number, itemId: number, rating: number, train: boolean = true) {
         let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } },])
-        this.trainingDataset = this.trainingDataset.concatenate(toAdd);
+        this.dataBlock.trainingDataset = this.dataBlock.trainingDataset.concatenate(toAdd);
 
         if (train) {
             await this.model.fitDataset(toAdd, {

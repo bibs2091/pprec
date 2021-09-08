@@ -64,13 +64,14 @@ export class DataBlock {
             this.validationDataset = this.validationDataset.map((x : Idataset) => ({ xs: { user: x.xs[userColumn].reshape([-1, 1]), item: x.xs[itemColumn].reshape([-1, 1]) }, ys: x.ys }))
 
         }
+        return this;
     }
 
     /*
         Create a datablock from a tensors.
         input the item, users, and ratings tensors
     */
-    fromTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number = 0, batchSize: number = 32, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null): void {
+    fromTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number = 0, batchSize: number = 32, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null): DataBlock {
         this.datasetInfo = { size: 0, usersNum: 0, itemsNum: 0 }
         this.datasetInfo.size = ratings.flatten().shape[0];
 
@@ -91,8 +92,7 @@ export class DataBlock {
             }
             this.trainingDataset = tf.data.array(psuedoTrainingDataset)
         }
-
-
+        return this;
     }
 
     /*

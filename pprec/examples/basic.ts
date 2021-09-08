@@ -2,8 +2,8 @@ import { DataBlock, Learner } from '../src/main'
 
 
 async function main() {
-    let IMDB = new DataBlock()
-    await IMDB.fromCsv("./examples/data.csv", 'user', 'movie', 'rating', 64, [0.8, 5.2]) //parsing the dataset from csv
+    let IMDB = await new DataBlock().fromCsv("./examples/data.csv", 'user', 'movie', 'rating', 64, [0.8, 5.2]) //parsing the dataset from csv
+    
 
     let learner = new Learner(IMDB, 1e-3); //Creating Learner from the IMDB datablock    
     

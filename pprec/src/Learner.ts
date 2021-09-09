@@ -5,6 +5,10 @@ import { cosineSimilarity, euclideandistance } from './utils'
 import { ValueError } from './errors'
 import { io } from '@tensorflow/tfjs-core';
 
+interface optionsLearner {
+    learningRate: number; embeddingOutputSize?: number; lossFunc?: string; optimizerName?: string; l2Labmda?: number
+}
+
 /*
     Learner is an api which allows you to create, edit and train your model in few lines.
 */
@@ -20,18 +24,28 @@ export class Learner {
     ratingRange?: number[];
     optimizerName: string;
     dataBlock: DataBlock;
-
-    constructor(dataBlock: DataBlock, learningRate: number = 1e-2, lossFunc: string = "meanSquaredError", optimizerName: string = "adam", embeddingOutputSize: number = 5, weightDecay: number = 0, options?: object) {
+    l2Labmda: number;
+    constructor(dataBlock: DataBlock, options: optionsLearner) {
         this.dataBlock = dataBlock;
         this.itemsNum = this.dataBlock.datasetInfo.itemsNum;
         this.usersNum = this.dataBlock.datasetInfo.usersNum;
-        this.lossFunc = lossFunc;
-        this.learningRate = learningRate;
-        this.embeddingOutputSize = embeddingOutputSize;
+        this.learningRate = options.learningRate;
         this.ratingRange = this.dataBlock.ratingRange
-        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, weightDecay, this.ratingRange);
+
+        if (options.lossFunc == null) this.lossFunc = "meanSquaredError";
+        else this.lossFunc = options.lossFunc;
+
+        if (options.embeddingOutputSize == null) this.embeddingOutputSize = 25;
+        else this.embeddingOutputSize = options.embeddingOutputSize;
+
+        if (options.l2Labmda == null) this.l2Labmda = 0;
+        else this.l2Labmda = options.l2Labmda;
+
+        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, this.l2Labmda, this.ratingRange);
         this.model = this.MFC.model;
-        this.optimizerName = optimizerName
+
+        if (options.optimizerName == null) this.optimizerName = "adam";
+        else this.optimizerName = options.optimizerName;
         this.setOptimizer(this.optimizerName);
     }
 
@@ -64,7 +78,7 @@ export class Learner {
     /*
     To train the model in a number of epoches
     */
-    fit(epochs: number = 1): Promise<tf.History>   {
+    fit(epochs: number = 1): Promise<tf.History> {
         return this.model.fitDataset(this.dataBlock.trainingDataset, {
             validationData: this.dataBlock.validationDataset,
             epochs: epochs,
@@ -74,7 +88,7 @@ export class Learner {
     /*
         To recommend an Item for a user given their ID
     */
-    recommendItem(userId: number): tf.Tensor  {
+    recommendItem(userId: number): tf.Tensor {
         let toPredict = [tf.fill([this.itemsNum, 1], userId), tf.range(0, this.itemsNum).reshape([-1, 1])]
         return (this.model.predictOnBatch(toPredict) as tf.Tensor).argMax();
     }

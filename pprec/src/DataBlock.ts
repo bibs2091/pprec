@@ -14,6 +14,11 @@ interface Idataset {
     }
 }
 
+interface optionsDataBlock {
+    userColumn: string; itemColumn: string, ratingColumn: string; batchSize?: number;
+    ratingRange?: number[]; validationPercentage?: number; delimiter?: string; 
+    seed?: number;
+}
 /*
     DataBlock is an api which allows you to generate and manupilate your dataset.
     To be used in the Learner API 
@@ -28,40 +33,43 @@ export class DataBlock {
         Create a datablock from a csv file.
         You should define the name of the columns which contain the corresponding data 
     */
-    async fromCsv(path: string, userColumn: string, itemColumn: string, ratingColumn: string, batchSize: number = 64, ratingRange?: number[], validationPercentage: number = 0.1, delimiter: string = ',',  seed: number = 42,  options?: object) {
+    async fromCsv(path: string,  options: optionsDataBlock) {
         let myPath = "file://" + path;
-        this.datasetInfo = await this.getInfoOnCsv(path, userColumn, itemColumn)
-        this.ratingRange = ratingRange;
+        this.datasetInfo = await this.getInfoOnCsv(path, options.userColumn, options.itemColumn)
+        this.ratingRange = options.ratingRange;
         let csvDataset: tf.data.Dataset<any> = (tf.data.csv(
             myPath, {
             configuredColumnsOnly: true,
-            delimiter: delimiter,
+            delimiter: options.delimiter,
             columnConfigs: {
-                [userColumn]: {
+                [options.userColumn]: {
                     required: true,
                     dtype: "float32"
                 },
-                [itemColumn]: {
+                [options.itemColumn]: {
                     required: true,
                     dtype: "float32"
                 },
-                [ratingColumn]: {
+                [options.ratingColumn]: {
                     isLabel: true,
                     dtype: "float32"
                 }
             }
-        })).shuffle(this.datasetInfo.size, seed.toString(), false) //shuffle the dataset
+        })).shuffle(this.datasetInfo.size, (options?.seed== null) ? undefined : options?.seed.toString(), false) //shuffle the dataset
 
 
         //split the dataset into train and valid set
+        let validationPercentage = (options?.validationPercentage== null) ? 0.1 : options?.validationPercentage
+        let batchSize = (options?.batchSize== null) ? 64 : options?.batchSize
+
         let trainSize = Math.round((1 - validationPercentage) * this.datasetInfo.size)
 
         this.trainingDataset = csvDataset.take(trainSize).batch(batchSize);
-        this.trainingDataset = this.trainingDataset.map((x: Idataset) => ({ xs: { user: x.xs[userColumn].reshape([-1, 1]), item: x.xs[itemColumn].reshape([-1, 1]) }, ys: x.ys }))
+        this.trainingDataset = this.trainingDataset.map((x: Idataset) => ({ xs: { user: x.xs[options.userColumn].reshape([-1, 1]), item: x.xs[options.itemColumn].reshape([-1, 1]) }, ys: x.ys }))
 
         if (validationPercentage > 0) {
             this.validationDataset = csvDataset.skip(trainSize).batch(batchSize);
-            this.validationDataset = this.validationDataset.map((x : Idataset) => ({ xs: { user: x.xs[userColumn].reshape([-1, 1]), item: x.xs[itemColumn].reshape([-1, 1]) }, ys: x.ys }))
+            this.validationDataset = this.validationDataset.map((x : Idataset) => ({ xs: { user: x.xs[options.userColumn].reshape([-1, 1]), item: x.xs[options.itemColumn].reshape([-1, 1]) }, ys: x.ys }))
 
         }
         return this;

@@ -96,7 +96,7 @@ export class Learner {
     addRating(userId: number, itemId: number, rating: number, train: boolean = true): void | Promise<tf.History> {
         let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } },])
         this.dataBlock.trainingDataset = this.dataBlock.trainingDataset.concatenate(toAdd);
-
+        this.dataBlock.datasetInfo.size++;
         if (train) {
             return this.model.fitDataset(toAdd, {
                 epochs: 1,
@@ -109,6 +109,7 @@ export class Learner {
     async addRatingSync(userId: number, itemId: number, rating: number, train: boolean = true) {
         let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } },])
         this.dataBlock.trainingDataset = this.dataBlock.trainingDataset.concatenate(toAdd);
+        this.dataBlock.datasetInfo.size++;
 
         if (train) {
             await this.model.fitDataset(toAdd, {

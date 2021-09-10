@@ -8,10 +8,13 @@ async function main() {
 
     const learner = new Learner(IMDB, { learningRate: 1e-3 }) //Creating Learner from the IMDB datablock    
 
-    await learner.fit(1); //train the mode for one epoch
+    // await learner.fit(1); //train the mode for one epoch
 
+    console.log(IMDB.size());
+    
     learner.recommendItem(10).print(); // recommend an item for the user with ID = 10
     learner.addRating(5, 10, 2) //add a new rating in the dataset
+    console.log(IMDB.size());
 
 
     console.log(learner.mostSimilarUsers(10)); //get the similar 10 users to user with ID = 10

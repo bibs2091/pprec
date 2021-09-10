@@ -156,4 +156,8 @@ export class DataBlock {
         }
         this.validationDataset = tf.data.array((psuedoValidationDataset))
     }
+
+    size(): number{
+        return this.datasetInfo.size;
+    }
 }

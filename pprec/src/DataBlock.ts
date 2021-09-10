@@ -1,5 +1,7 @@
 import * as tf from '@tensorflow/tfjs-node'
-import * as csv from '@fast-csv/parse';
+import * as csv from 'fast-csv';
+import * as fs from 'fs';
+
 interface IdatasetInfo {
     size: number; usersNum: number; itemsNum: number;
 }
@@ -16,7 +18,7 @@ interface Idataset {
 
 interface optionsDataBlock {
     userColumn: string; itemColumn: string, ratingColumn: string; batchSize?: number;
-    ratingRange?: number[]; validationPercentage?: number; delimiter?: string; 
+    ratingRange?: number[]; validationPercentage?: number; delimiter?: string;
     seed?: number;
 }
 /*
@@ -27,13 +29,15 @@ export class DataBlock {
     trainingDataset: tf.data.Dataset<any>;
     validationDataset: tf.data.Dataset<any>;
     datasetInfo: IdatasetInfo;
+    batchSize: number;
     ratingRange?: number[];
+
 
     /*
         Create a datablock from a csv file.
         You should define the name of the columns which contain the corresponding data 
     */
-    async fromCsv(path: string,  options: optionsDataBlock) {
+    async fromCsv(path: string, options: optionsDataBlock) {
         let myPath = "file://" + path;
         this.datasetInfo = await this.getInfoOnCsv(path, options.userColumn, options.itemColumn)
         this.ratingRange = options.ratingRange;
@@ -55,21 +59,21 @@ export class DataBlock {
                     dtype: "float32"
                 }
             }
-        })).shuffle(this.datasetInfo.size, (options?.seed== null) ? undefined : options?.seed.toString(), false) //shuffle the dataset
+        })).shuffle(this.datasetInfo.size, (options?.seed == null) ? undefined : options?.seed.toString(), false) //shuffle the dataset
 
 
         //split the dataset into train and valid set
-        let validationPercentage = (options?.validationPercentage== null) ? 0.1 : options?.validationPercentage
-        let batchSize = (options?.batchSize== null) ? 64 : options?.batchSize
+        let validationPercentage = (options?.validationPercentage == null) ? 0.1 : options?.validationPercentage
+        this.batchSize = (options?.batchSize == null) ? 64 : options?.batchSize
 
         let trainSize = Math.round((1 - validationPercentage) * this.datasetInfo.size)
 
-        this.trainingDataset = csvDataset.take(trainSize).batch(batchSize);
+        this.trainingDataset = csvDataset.take(trainSize).batch(this.batchSize);
         this.trainingDataset = this.trainingDataset.map((x: Idataset) => ({ xs: { user: x.xs[options.userColumn].reshape([-1, 1]), item: x.xs[options.itemColumn].reshape([-1, 1]) }, ys: x.ys }))
 
         if (validationPercentage > 0) {
-            this.validationDataset = csvDataset.skip(trainSize).batch(batchSize);
-            this.validationDataset = this.validationDataset.map((x : Idataset) => ({ xs: { user: x.xs[options.userColumn].reshape([-1, 1]), item: x.xs[options.itemColumn].reshape([-1, 1]) }, ys: x.ys }))
+            this.validationDataset = csvDataset.skip(trainSize).batch(this.batchSize);
+            this.validationDataset = this.validationDataset.map((x: Idataset) => ({ xs: { user: x.xs[options.userColumn].reshape([-1, 1]), item: x.xs[options.itemColumn].reshape([-1, 1]) }, ys: x.ys }))
 
         }
         return this;
@@ -94,7 +98,7 @@ export class DataBlock {
             this.splitTrainValidTensor(items, users, ratings, validationPercentage)
         }
         else {
-            let psuedoTrainingDataset:  tf.TensorContainer[]= []
+            let psuedoTrainingDataset: tf.TensorContainer[] = []
             for (let i = 0; i < ratings.shape[0]; i++) {
                 psuedoTrainingDataset.push({ xs: { user: users.slice(i, 1), item: items.slice(i, 1) }, ys: { rating: ratings.slice(i) } })
             }
@@ -114,7 +118,7 @@ export class DataBlock {
             let uniqueItems = new Set()
             let uniqueUsers = new Set()
 
-            //using the fast-csv
+            //using the fast-csv parse
             csv.parseFile(path, { headers: true })
                 .on('error', error => console.error(error))
                 .on('data', (data) => {
@@ -143,7 +147,7 @@ export class DataBlock {
         let [trainingUsers, validationUsers] = tf.split(users, [trainSize, validSize], 0);
         let [trainingRatings, validationRatings] = tf.split(ratings, [trainSize, validSize], 0);
 
-        let psuedoTrainingDataset: tf.TensorContainer[]= []
+        let psuedoTrainingDataset: tf.TensorContainer[] = []
         for (let i = 0; i < trainingRatings.shape[0]; i++) {
             psuedoTrainingDataset.push({ xs: { user: trainingUsers.slice(i, 1), item: trainingItems.slice(i, 1) }, ys: { rating: trainingRatings.slice(i) } })
         }
@@ -157,7 +161,43 @@ export class DataBlock {
         this.validationDataset = tf.data.array((psuedoValidationDataset))
     }
 
-    size(): number{
+
+    /*
+        save the datablock in a path (training + validation)
+    */
+    async save(outputFile: string): Promise<void> {
+        console.time("dbsave");
+        const writeStream = fs.createWriteStream(outputFile);
+        const stream = csv.format({ headers: ['user', 'item', 'rating'] });
+        await this.trainingDataset.forEachAsync(
+            function (e: Idataset) {
+                let users_ = e.xs.user.dataSync()
+                let items_ = e.xs.item.dataSync()
+                let ratings_ = e.ys.rating.dataSync()
+                for (let i = 0; i < ratings_.length; i++)
+                    stream.write([users_[i], items_[i], ratings_[i]])
+            }
+        );
+
+        if (this.validationDataset != null)
+            await this.validationDataset.forEachAsync(
+                function (e: Idataset) {
+                    let users_ = e.xs.user.dataSync()
+                    let items_ = e.xs.item.dataSync()
+                    let ratings_ = e.ys.rating.dataSync()
+                    for (let i = 0; i < ratings_.length; i++)
+                        stream.write([users_[i], items_[i], ratings_[i]])
+                }
+            );
+
+        stream.end();
+        stream.pipe(writeStream);
+    }
+
+    /*
+        return the size of the dataset (training + validation)
+    */
+    size(): number {
         return this.datasetInfo.size;
     }
 }

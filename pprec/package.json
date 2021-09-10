@@ -13,8 +13,8 @@
   "author": "Mohamed NAAS",
   "license": "ISC",
   "dependencies": {
-    "@fast-csv/parse": "^4.3.6",
     "@tensorflow/tfjs-node": "^3.9.0",
+    "fast-csv": "^4.3.6",
     "node-pre-gyp": "^0.17.0"
   },
   "devDependencies": {

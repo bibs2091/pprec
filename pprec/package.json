@@ -5,7 +5,8 @@
   "types": "dir",
   "main": "dir/main.js",
   "scripts": {
-    "build": "tsc -p ."
+    "build": "tsc -p .",
+    "docs": "npx typedoc --out ../docs"
   },
   "files": [
     "dir"
@@ -19,14 +20,9 @@
   },
   "devDependencies": {
     "@types/node": "^16.4.10",
-    "@typescript-eslint/eslint-plugin": "^4.29.3",
-    "@typescript-eslint/parser": "^4.29.3",
-    "eslint": "^7.2.0",
-    "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-config-airbnb-typescript": "^14.0.0",
-    "eslint-plugin-import": "^2.22.1",
     "ts-node": "^10.1.0",
     "tslib": "^2.3.0",
+    "typedoc": "^0.22.2",
     "typescript": "^4.3.5"
   },
   "repository": {

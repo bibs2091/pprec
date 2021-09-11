@@ -3,7 +3,7 @@ import * as tf from '@tensorflow/tfjs-node'
 import { SigmoidRange } from './SigmoidRange'
 
 
-/*
+/**
    MatrixFactorization allows you to create a matrix factorization model to be used in Learner.
 */
 export class MatrixFactorization {

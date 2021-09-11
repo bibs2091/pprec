@@ -21,7 +21,7 @@ interface optionsDataBlock {
     ratingRange?: number[]; validationPercentage?: number; delimiter?: string;
     seed?: number;
 }
-/*
+/**
     DataBlock is an api which allows you to generate and manupilate your dataset.
     To be used in the Learner API 
 */
@@ -33,7 +33,7 @@ export class DataBlock {
     ratingRange?: number[];
 
 
-    /*
+    /**
         Create a datablock from a csv file.
         You should define the name of the columns which contain the corresponding data 
     */
@@ -79,7 +79,7 @@ export class DataBlock {
         return this;
     }
 
-    /*
+    /**
         Create a datablock from a tensors.
         input the item, users, and ratings tensors
     */
@@ -107,7 +107,7 @@ export class DataBlock {
         return this;
     }
 
-    /*
+    /**
         Get some stats about a csv file.
         mainly used in fromCsv method
         returns datasetInfo object
@@ -136,7 +136,7 @@ export class DataBlock {
     }
 
 
-    /*
+    /**
         Split the tensors into training and validation set.
         mainly used in fromTensor method
     */
@@ -162,7 +162,7 @@ export class DataBlock {
     }
 
 
-    /*
+    /**
         save the datablock in a path (training + validation)
     */
     async save(outputFile: string): Promise<void> {
@@ -194,7 +194,7 @@ export class DataBlock {
         stream.pipe(writeStream);
     }
 
-    /*
+    /**
         return the size of the dataset (training + validation)
     */
     size(): number {

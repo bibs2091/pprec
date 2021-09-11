@@ -9,7 +9,7 @@ interface optionsLearner {
     learningRate: number; embeddingOutputSize?: number; lossFunc?: string; optimizerName?: string; l2Labmda?: number
 }
 
-/*
+/**
     Learner is an api which allows you to create, edit and train your model in few lines.
 */
 export class Learner {
@@ -50,8 +50,8 @@ export class Learner {
     }
 
 
-    /*
-    To set the right optimizer for the model
+    /**
+     * Setting an optimizer for leaner
     */
     setOptimizer(optimizerName: string) {
 
@@ -75,7 +75,7 @@ export class Learner {
         });
     }
 
-    /*
+    /**
     To train the model in a number of epoches
     */
     fit(epochs: number = 1): Promise<tf.History> {
@@ -85,7 +85,7 @@ export class Learner {
         })
     }
 
-    /*
+    /**
         To recommend an Item for a user given their ID
     */
     recommendItem(userId: number): tf.Tensor {
@@ -120,7 +120,7 @@ export class Learner {
     }
 
 
-    /*
+    /**
         To add a new user embedding in the model.
         The embedding is generated based on the mean of the other users latent factors.
     */
@@ -134,7 +134,7 @@ export class Learner {
         return this.usersNum //the new user ID
     }
 
-    /*
+    /**
         To add a new item embedding in the model.
         The embedding is generated based on the mean of the other item latent factors.
     */
@@ -150,7 +150,7 @@ export class Learner {
 
 
 
-    /*
+    /**
        To retrieve the k similar users of a user 
     */
     mostSimilarUsers(id: number, k = 10): number[] {
@@ -162,7 +162,7 @@ export class Learner {
         return indicesArray.filter((e: number) => e !== id)
     }
 
-    /*
+    /**
        To retrieve the k similar items of an item 
     */
     mostSimilarItems(id: number, k = 10): number[] {
@@ -174,7 +174,7 @@ export class Learner {
         return indicesArray.filter((e: number) => e !== id)
     }
 
-    /*
+    /**
        To save the architecture and the weights of the model in a given path
     */
     save(path: string): Promise<io.SaveResult> {

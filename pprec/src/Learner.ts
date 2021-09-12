@@ -2,7 +2,7 @@ import { MatrixFactorization } from './MatrixFactorization';
 import * as tf from '@tensorflow/tfjs-node'
 import { DataBlock } from './DataBlock'
 import { cosineSimilarity, euclideandistance } from './utils'
-import { ValueError } from './errors'
+import { ValueError, NonExistance } from './errors'
 import { io } from '@tensorflow/tfjs-core';
 
 interface optionsLearner {
@@ -13,40 +13,47 @@ interface optionsLearner {
     Learner is an api which allows you to create, edit and train your model in few lines.
 */
 export class Learner {
-    itemsNum: number;
-    usersNum: number;
+    itemsNum?: number;
+    usersNum?: number;
     learningRate: number;
     lossFunc: string;
-    embeddingOutputSize: number;
+    embeddingOutputSize?: number;
     optimizer: tf.Optimizer;
     model: tf.LayersModel;
-    MFC: MatrixFactorization;
+    MFC?: MatrixFactorization;
     ratingRange?: number[];
     optimizerName: string;
-    dataBlock: DataBlock;
-    l2Labmda: number;
-    constructor(dataBlock: DataBlock, options: optionsLearner) {
-        this.dataBlock = dataBlock;
-        this.itemsNum = this.dataBlock.datasetInfo.itemsNum;
-        this.usersNum = this.dataBlock.datasetInfo.usersNum;
-        this.learningRate = options.learningRate;
-        this.ratingRange = this.dataBlock.ratingRange
+    dataBlock?: DataBlock;
+    l2Labmda?: number;
+    constructor(dataBlock?: DataBlock, options?: optionsLearner) {
+        if (dataBlock != null && options != null) {
+            this.dataBlock = dataBlock;
+            this.itemsNum = this.dataBlock.datasetInfo.itemsNum;
+            this.usersNum = this.dataBlock.datasetInfo.usersNum;
+            this.ratingRange = this.dataBlock.ratingRange
+            this.learningRate = options.learningRate;
 
-        if (options.lossFunc == null) this.lossFunc = "meanSquaredError";
-        else this.lossFunc = options.lossFunc;
+            if (options.lossFunc == null) this.lossFunc = "meanSquaredError";
+            else this.lossFunc = options.lossFunc;
 
-        if (options.embeddingOutputSize == null) this.embeddingOutputSize = 25;
-        else this.embeddingOutputSize = options.embeddingOutputSize;
+            if (options.embeddingOutputSize == null) this.embeddingOutputSize = 25;
+            else this.embeddingOutputSize = options.embeddingOutputSize;
 
-        if (options.l2Labmda == null) this.l2Labmda = 0;
-        else this.l2Labmda = options.l2Labmda;
+            if (options.l2Labmda == null) this.l2Labmda = 0;
+            else this.l2Labmda = options.l2Labmda;
 
-        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, this.l2Labmda, this.ratingRange);
-        this.model = this.MFC.model;
+            this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, this.l2Labmda, this.ratingRange);
+            this.model = this.MFC.model;
 
-        if (options.optimizerName == null) this.optimizerName = "adam";
-        else this.optimizerName = options.optimizerName;
-        this.setOptimizer(this.optimizerName);
+            if (options.optimizerName == null) this.optimizerName = "adam";
+            else this.optimizerName = options.optimizerName;
+            this.setOptimizer(this.optimizerName);
+        }
+        else {
+            this.lossFunc = "meanSquaredError";
+            this.optimizerName = "adam";
+        }
+
     }
 
 
@@ -79,6 +86,12 @@ export class Learner {
     To train the model in a number of epoches
     */
     fit(epochs: number = 1): Promise<tf.History> {
+        if (this.dataBlock == null)
+            throw new NonExistance(`No datablock to train on, please provoid a proper DataBlock `);
+
+        if (this.model == null)
+            throw new NonExistance(`No model to train, please provoid a proper model`);
+
         return this.model.fitDataset(this.dataBlock.trainingDataset, {
             validationData: this.dataBlock.validationDataset,
             epochs: epochs,
@@ -89,15 +102,32 @@ export class Learner {
         To recommend an Item for a user given their ID
     */
     recommendItem(userId: number): tf.Tensor {
+        if (this.itemsNum == null)
+            throw new NonExistance(
+                `itemsNum does not exist, this is maybe because you did not feed Learner a DataBlock`
+            );
+
+        if (this.model == null)
+            throw new NonExistance(`No model to train, please provoid a proper model`);
+
         let toPredict = [tf.fill([this.itemsNum, 1], userId), tf.range(0, this.itemsNum).reshape([-1, 1])]
         return (this.model.predictOnBatch(toPredict) as tf.Tensor).argMax();
     }
 
     addRating(userId: number, itemId: number, rating: number, train: boolean = true): void | Promise<tf.History> {
+
+        if (this.dataBlock == null)
+            throw new NonExistance(`No datablock to train on, please provoid a proper DataBlock `);
+
+
         let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } },])
         this.dataBlock.trainingDataset = this.dataBlock.trainingDataset.concatenate(toAdd);
         this.dataBlock.datasetInfo.size++;
         if (train) {
+
+            if (this.model == null)
+                throw new NonExistance(`No model to train, please provoid a proper model`);
+
             return this.model.fitDataset(toAdd, {
                 epochs: 1,
                 verbose: 0
@@ -107,6 +137,10 @@ export class Learner {
 
 
     async addRatingSync(userId: number, itemId: number, rating: number, train: boolean = true) {
+
+        if (this.dataBlock == null)
+            throw new NonExistance(`No datablock to train on, please provoid a proper DataBlock `);
+
         let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } },])
         this.dataBlock.trainingDataset = this.dataBlock.trainingDataset.concatenate(toAdd);
         this.dataBlock.datasetInfo.size++;
@@ -125,6 +159,22 @@ export class Learner {
         The embedding is generated based on the mean of the other users latent factors.
     */
     newUser(): number {
+        if (this.usersNum == null)
+            throw new NonExistance(
+                `usersNum does not exist, this is maybe because you did not feed Learner a DataBlock`
+            );
+
+        if (this.itemsNum == null)
+            throw new NonExistance(
+                `itemsNum does not exist, this is maybe because you did not feed Learner a DataBlock`
+            );
+
+        if (this.embeddingOutputSize == null)
+            throw new NonExistance(`embeddingOutputSize does not exist`);
+
+        if (this.model == null || this.MFC == null)
+            throw new NonExistance(`No model to train, please provoid a proper model`);
+
         this.usersNum += 1
         let userEmbeddingWeight = this.MFC.userEmbeddingLayer.getWeights()[0];
         userEmbeddingWeight = tf.concat([userEmbeddingWeight, userEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
@@ -139,6 +189,22 @@ export class Learner {
         The embedding is generated based on the mean of the other item latent factors.
     */
     newItem() {
+        if (this.usersNum == null)
+            throw new NonExistance(
+                `usersNum does not exist, this is maybe because you did not feed Learner a DataBlock`
+            );
+
+        if (this.itemsNum == null)
+            throw new NonExistance(
+                `itemsNum does not exist, this is maybe because you did not feed Learner a DataBlock`
+            );
+
+        if (this.embeddingOutputSize == null)
+            throw new NonExistance(`embeddingOutputSize does not exist`);
+
+        if (this.model == null || this.MFC == null)
+            throw new NonExistance(`No model to train, please provoid a proper model`);
+
         this.itemsNum += 1
         let itemEmbeddingWeight = this.MFC.itemEmbeddingLayer.getWeights()[0];
         itemEmbeddingWeight = tf.concat([itemEmbeddingWeight, itemEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
@@ -154,6 +220,10 @@ export class Learner {
        To retrieve the k similar users of a user 
     */
     mostSimilarUsers(id: number, k = 10): number[] {
+
+        if (this.model == null || this.MFC == null)
+            throw new NonExistance(`No model to train, please provoid a proper model`);
+
         if (k < 1) throw new ValueError(`the k in mostSimilarUsers >= 1`);
         let userEmbeddingWeight = this.MFC.userEmbeddingLayer.getWeights()[0];
         let similarity = cosineSimilarity(userEmbeddingWeight, userEmbeddingWeight.slice(id, 1))
@@ -166,6 +236,9 @@ export class Learner {
        To retrieve the k similar items of an item 
     */
     mostSimilarItems(id: number, k = 10): number[] {
+        if (this.model == null || this.MFC == null)
+            throw new NonExistance(`No model to train, please provoid a proper model`);
+
         if (k < 1) throw new ValueError(`the k in mostSimilarItems >= 1`);
         let itemEmbeddingWeight = this.MFC.itemEmbeddingLayer.getWeights()[0];
         let similarity = euclideandistance(itemEmbeddingWeight, itemEmbeddingWeight.slice(id, 1))

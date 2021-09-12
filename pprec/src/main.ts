@@ -5,6 +5,8 @@ export function dataBlock() {
     return new DataBlock();
 }
 
-export function learner(dataBlockargs, options) {
-    return new Learner(dataBlockargs, options);
+export function learner(dataBlockargs?, options?) {
+    if (dataBlockargs != null && options != null)
+        return new Learner(dataBlockargs, options);
+    else return new Learner();
 }

@@ -5,3 +5,9 @@ export class ValueError extends Error {
     }
 }
 
+export class NonExistance extends Error {
+    constructor(message?: string) {
+        super(message);
+        Object.setPrototypeOf(this, ValueError.prototype);
+    }
+}

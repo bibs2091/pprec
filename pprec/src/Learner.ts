@@ -254,7 +254,16 @@ export class Learner {
         return this.model.save('file://' + path);
     }
 
-    load(path: string): Promise<tf.LayersModel> {
-        return tf.loadLayersModel('file://' + path);
+    /**
+    * To load a pre-saved model 
+    * 
+    * if your data does not already have a DataBlock, only recommendItem method will work
+    *   
+    */
+    async load(path: string): Promise<void> {
+        this.model = await tf.loadLayersModel('file://' + path + '/model.json');
+        this.usersNum = this.model.getWeights()[0].shape[0] -1;
+        this.itemsNum = this.model.getWeights()[1].shape[0] -1;
+        this.embeddingOutputSize = this.model.getWeights()[0].shape[1];
     }
 }

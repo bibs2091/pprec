@@ -59,7 +59,11 @@ export class DataBlock {
                     dtype: "float32"
                 }
             }
-        })).shuffle(this.datasetInfo.size, (options?.seed == null) ? undefined : options?.seed.toString(), false) //shuffle the dataset
+        })).shuffle(
+            (this.datasetInfo.size > 1e6) ? 1e6 : this.datasetInfo.size,
+            (options?.seed == null) ? undefined : options?.seed.toString(),
+            false
+        ) //shuffle the dataset
 
 
         //split the dataset into train and valid set
@@ -113,6 +117,29 @@ export class DataBlock {
         returns datasetInfo object
     */
     getInfoOnCsv(path: string, userColumn: string, itemColumn: string): Promise<IdatasetInfo> {
+        let datasetInfo_ = new Promise<IdatasetInfo>(function (resolve, reject) {
+            let csvInfo = { size: 0, usersNum: 0, itemsNum: 0 }
+            let uniqueItems = new Set()
+            let uniqueUsers = new Set()
+
+            //using the fast-csv parse
+            csv.parseFile(path, { headers: true })
+                .on('error', error => console.error(error))
+                .on('data', (data) => {
+                    uniqueUsers.add(data[userColumn])
+                    uniqueItems.add(data[itemColumn])
+                })
+                .on('end', (rowCount: number) => {
+                    csvInfo.size = rowCount;
+                    csvInfo.usersNum = uniqueUsers.size
+                    csvInfo.itemsNum = uniqueItems.size
+                    return resolve(csvInfo);
+                })
+        });
+        return datasetInfo_;
+    }
+
+    getInfoOnCsv2(path: string, userColumn: string, itemColumn: string): Promise<IdatasetInfo> {
         let datasetInfo_ = new Promise<IdatasetInfo>(function (resolve, reject) {
             let csvInfo = { size: 0, usersNum: 0, itemsNum: 0 }
             let uniqueItems = new Set()

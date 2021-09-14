@@ -22,8 +22,8 @@ async function main() {
     myLearner.addRating(5, 10, 2) 
 
 
-    // recommend an item for the user with ID = 10
-    myLearner.recommendItem(10).print();
+    // recommend 7 items for the user with ID = 10 
+    console.log(myLearner.recommendItems(10, 7)); 
 
     //get the similar 10 users to user with ID = 10
     console.log(myLearner.mostSimilarUsers(10)); 

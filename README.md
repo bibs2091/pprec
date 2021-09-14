@@ -12,7 +12,9 @@ import { dataBlock, learner } from 'pprec';
 
 async function main() {
     const IMDB = await dataBlock().fromCsv("./examples/data.csv", {
-        userColumn: 'user', itemColumn: 'movie', ratingColumn: 'rating',batchSize: 64, ratingRange: [1, 5]});
+        userColumn: 'user', itemColumn: 'movie', ratingColumn: 'rating',
+        batchSize: 64, ratingRange: [1, 5]
+        });
 
     const myLearner = learner(IMDB, { learningRate: 1e-3 });
 
@@ -22,8 +24,8 @@ async function main() {
     myLearner.addRating(5, 10, 2) 
 
 
-    // recommend an item for the user with ID = 10
-    myLearner.recommendItem(10).print();
+    // recommend 7 items for the user with ID = 10 
+    console.log(myLearner.recommendItems(10, 7)); 
 
     //get the similar 10 users to user with ID = 10
     console.log(myLearner.mostSimilarUsers(10)); 
@@ -32,6 +34,7 @@ async function main() {
     console.log(myLearner.mostSimilarItems(313));
     
     myLearner.save("myModel"); // saving the model
+    
 }
 
 main()

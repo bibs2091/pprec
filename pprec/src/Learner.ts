@@ -99,9 +99,9 @@ export class Learner {
     }
 
     /**
-        To recommend an Item for a user given their ID
+        To recommend k items for a user given their ID
     */
-    recommendItem(userId: number): tf.Tensor {
+    recommendItems(userId: number, k:number): number[] {
         if (this.itemsNum == null)
             throw new NonExistance(
                 `itemsNum does not exist, this is maybe because you did not feed Learner a DataBlock`
@@ -111,7 +111,9 @@ export class Learner {
             throw new NonExistance(`No model to train, please provoid a proper model`);
 
         let toPredict = [tf.fill([this.itemsNum, 1], userId), tf.range(0, this.itemsNum).reshape([-1, 1])]
-        return (this.model.predictOnBatch(toPredict) as tf.Tensor).argMax();
+        const {values, indices} = tf.topk((this.model.predictOnBatch(toPredict) as tf.Tensor).flatten(), k);
+
+        return (indices.arraySync() as number[]);
     }
 
     addRating(userId: number, itemId: number, rating: number, train: boolean = true): void | Promise<tf.History> {

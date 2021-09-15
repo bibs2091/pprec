@@ -25,6 +25,8 @@ export class Learner {
     optimizerName: string;
     dataBlock?: DataBlock;
     l2Labmda?: number;
+    modelToUserMap: Map<number, any>;
+    modelToItemMap: Map<number, any>;
     constructor(dataBlock?: DataBlock, options?: optionsLearner) {
         if (dataBlock != null && options != null) {
             this.dataBlock = dataBlock;
@@ -48,6 +50,10 @@ export class Learner {
             if (options.optimizerName == null) this.optimizerName = "adam";
             else this.optimizerName = options.optimizerName;
             this.setOptimizer(this.optimizerName);
+
+            this.dataBlock.datasetInfo.userToModelMap.forEach((value, key) => this.modelToUserMap.set(value, key));
+            this.dataBlock.datasetInfo.itemToModelMap.forEach((value, key) => this.modelToItemMap.set(value, key));
+            
         }
         else {
             this.lossFunc = "meanSquaredError";
@@ -101,7 +107,7 @@ export class Learner {
     /**
         To recommend k items for a user given their ID
     */
-    recommendItems(userId: number, k:number): number[] {
+    recommendItems(userId: number, k: number): number[] {
         if (this.itemsNum == null)
             throw new NonExistance(
                 `itemsNum does not exist, this is maybe because you did not feed Learner a DataBlock`
@@ -111,7 +117,7 @@ export class Learner {
             throw new NonExistance(`No model to train, please provoid a proper model`);
 
         let toPredict = [tf.fill([this.itemsNum, 1], userId), tf.range(0, this.itemsNum).reshape([-1, 1])]
-        const {values, indices} = tf.topk((this.model.predictOnBatch(toPredict) as tf.Tensor).flatten(), k);
+        const { values, indices } = tf.topk((this.model.predictOnBatch(toPredict) as tf.Tensor).flatten(), k);
 
         return (indices.arraySync() as number[]);
     }
@@ -264,8 +270,8 @@ export class Learner {
     */
     async load(path: string): Promise<void> {
         this.model = await tf.loadLayersModel('file://' + path + '/model.json');
-        this.usersNum = this.model.getWeights()[0].shape[0] -1;
-        this.itemsNum = this.model.getWeights()[1].shape[0] -1;
+        this.usersNum = this.model.getWeights()[0].shape[0] - 1;
+        this.itemsNum = this.model.getWeights()[1].shape[0] - 1;
         this.embeddingOutputSize = this.model.getWeights()[0].shape[1];
     }
 }

@@ -4,6 +4,7 @@ import * as fs from 'fs';
 
 interface IdatasetInfo {
     size: number; usersNum: number; itemsNum: number;
+    userToModelMap: Map<any, number>, itemToModelMap: Map<any, number>
 }
 
 interface Idataset {
@@ -15,6 +16,16 @@ interface Idataset {
         rating: tf.Tensor;
     }
 }
+
+interface Idataset2 {
+    xs: {
+        [user_item: string]: any;
+    }
+    ys: {
+        rating: number;
+    }
+}
+
 
 interface optionsDataBlock {
     userColumn: string; itemColumn: string, ratingColumn: string; batchSize?: number;
@@ -60,7 +71,7 @@ export class DataBlock {
                 }
             }
         })).shuffle(
-            (this.datasetInfo.size > 1e6) ? 1e6 : this.datasetInfo.size,
+            (this.datasetInfo.size > 1e5) ? 1e5 : this.datasetInfo.size,
             (options?.seed == null) ? undefined : options?.seed.toString(),
             false
         ) //shuffle the dataset
@@ -72,13 +83,20 @@ export class DataBlock {
 
         let trainSize = Math.round((1 - validationPercentage) * this.datasetInfo.size)
 
-        this.trainingDataset = csvDataset.take(trainSize).batch(this.batchSize);
-        this.trainingDataset = this.trainingDataset.map((x: Idataset) => ({ xs: { user: x.xs[options.userColumn].reshape([-1, 1]), item: x.xs[options.itemColumn].reshape([-1, 1]) }, ys: x.ys }))
+        this.trainingDataset = csvDataset.take(trainSize)
+            .map((x: Idataset2) => (
+                { xs: { user: this.datasetInfo.userToModelMap.get(`${x.xs[options.userColumn]}`), item: this.datasetInfo.itemToModelMap.get(`${x.xs[options.itemColumn]}`) }, ys: x.ys }
+            ))
+            .batch(this.batchSize);
+        this.trainingDataset = this.trainingDataset.map((x: Idataset) => ({ xs: { user: x.xs.user.reshape([-1, 1]), item: x.xs.item.reshape([-1, 1]) }, ys: x.ys }))
 
         if (validationPercentage > 0) {
-            this.validationDataset = csvDataset.skip(trainSize).batch(this.batchSize);
-            this.validationDataset = this.validationDataset.map((x: Idataset) => ({ xs: { user: x.xs[options.userColumn].reshape([-1, 1]), item: x.xs[options.itemColumn].reshape([-1, 1]) }, ys: x.ys }))
-
+            this.validationDataset = csvDataset.skip(trainSize)
+                .map((x: Idataset2) => (
+                    { xs: { user: this.datasetInfo.userToModelMap.get(`${x.xs[options.userColumn]}`), item: this.datasetInfo.itemToModelMap.get(`${x.xs[options.itemColumn]}`) }, ys: x.ys }
+                ))
+                .batch(this.batchSize);
+            this.validationDataset = this.validationDataset.map((x: Idataset) => ({ xs: { user: x.xs.user.reshape([-1, 1]), item: x.xs.item.reshape([-1, 1]) }, ys: x.ys }))
         }
         return this;
     }
@@ -88,7 +106,7 @@ export class DataBlock {
         input the item, users, and ratings tensors
     */
     fromTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number = 0, batchSize: number = 32, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null): DataBlock {
-        this.datasetInfo = { size: 0, usersNum: 0, itemsNum: 0 }
+        this.datasetInfo = { size: 0, usersNum: 0, itemsNum: 0, userToModelMap: new Map(), itemToModelMap: new Map()  }
         this.datasetInfo.size = ratings.flatten().shape[0];
 
         // shuffle the dataset
@@ -116,52 +134,36 @@ export class DataBlock {
         mainly used in fromCsv method
         returns datasetInfo object
     */
-    getInfoOnCsv(path: string, userColumn: string, itemColumn: string): Promise<IdatasetInfo> {
-        let datasetInfo_ = new Promise<IdatasetInfo>(function (resolve, reject) {
-            let csvInfo = { size: 0, usersNum: 0, itemsNum: 0 }
-            let uniqueItems = new Set()
-            let uniqueUsers = new Set()
+        getInfoOnCsv(path: string, userColumn: string, itemColumn: string): Promise<IdatasetInfo> {
+            let datasetInfo_ = new Promise<IdatasetInfo>(function (resolve, reject) {
+                let csvInfo = { size: 0, usersNum: 0, itemsNum: 0, userToModelMap: new Map(), itemToModelMap: new Map() };
+                let usersIndex: number = 0;
+                let itemsIndex: number = 0;
+    
+                //using the fast-csv parse
+                csv.parseFile(path, { headers: true })
+                    .on('error', error => console.error(error))
+                    .on('data', (data) => {
+                        if (!csvInfo.userToModelMap.has(`${data[userColumn]}`)) {
+                            csvInfo.userToModelMap.set(`${data[userColumn]}`, usersIndex);
+                            usersIndex += 1;
+                        }
+                        if (!csvInfo.itemToModelMap.has(`${data[itemColumn]}`)) {
+                            csvInfo.itemToModelMap.set(`${data[itemColumn]}`, itemsIndex);
+                            itemsIndex += 1;
+                        }
+                    })
+                    .on('end', (rowCount: number) => {
+                        csvInfo.size = rowCount;
+                        csvInfo.usersNum = usersIndex
+                        csvInfo.itemsNum = itemsIndex
+                        return resolve(csvInfo);
+                    })
+            });
+            return datasetInfo_;
+        }
 
-            //using the fast-csv parse
-            csv.parseFile(path, { headers: true })
-                .on('error', error => console.error(error))
-                .on('data', (data) => {
-                    uniqueUsers.add(data[userColumn])
-                    uniqueItems.add(data[itemColumn])
-                })
-                .on('end', (rowCount: number) => {
-                    csvInfo.size = rowCount;
-                    csvInfo.usersNum = uniqueUsers.size
-                    csvInfo.itemsNum = uniqueItems.size
-                    return resolve(csvInfo);
-                })
-        });
-        return datasetInfo_;
-    }
-
-    getInfoOnCsv2(path: string, userColumn: string, itemColumn: string): Promise<IdatasetInfo> {
-        let datasetInfo_ = new Promise<IdatasetInfo>(function (resolve, reject) {
-            let csvInfo = { size: 0, usersNum: 0, itemsNum: 0 }
-            let uniqueItems = new Set()
-            let uniqueUsers = new Set()
-
-            //using the fast-csv parse
-            csv.parseFile(path, { headers: true })
-                .on('error', error => console.error(error))
-                .on('data', (data) => {
-                    uniqueUsers.add(data[userColumn])
-                    uniqueItems.add(data[itemColumn])
-                })
-                .on('end', (rowCount: number) => {
-                    csvInfo.size = rowCount;
-                    csvInfo.usersNum = uniqueUsers.size
-                    csvInfo.itemsNum = uniqueItems.size
-                    return resolve(csvInfo);
-                })
-        });
-        return datasetInfo_;
-    }
-
+    
 
     /**
         Split the tensors into training and validation set.

@@ -8,7 +8,7 @@ async function main() {
 
     const myLearner = learner(IMDB, { learningRate: 1e-3 }); //Creating learner from the IMDB datablock    
 
-    // await myLearner.fit(1); //train the mode for one epoch
+    await myLearner.fit(1); //train the mode for one epoch
 
     console.log(myLearner.recommendItems(10, 7)); // recommend 7 items for the user with ID = 10 
     myLearner.addRating(5, 10, 2) //add a new rating in the dataset

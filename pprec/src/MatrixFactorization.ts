@@ -38,7 +38,7 @@ export class MatrixFactorization {
 
         if (itemEmbeddingWeights == null) {
             this.itemEmbeddingLayer = tf.layers.embedding({
-                inputDim: itemsNum + 1,
+                inputDim: itemsNum,
                 outputDim: embeddingOutputSize,
                 inputLength: 1,
                 name: "itemEmbeddingLayer",
@@ -47,7 +47,7 @@ export class MatrixFactorization {
         }
         else {
             this.itemEmbeddingLayer = tf.layers.embedding({
-                inputDim: itemsNum + 1,
+                inputDim: itemsNum,
                 outputDim: embeddingOutputSize,
                 inputLength: 1,
                 name: "itemEmbeddingLayer",

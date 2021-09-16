@@ -50,10 +50,11 @@ export class Learner {
             if (options.optimizerName == null) this.optimizerName = "adam";
             else this.optimizerName = options.optimizerName;
             this.setOptimizer(this.optimizerName);
-
+            this.modelToUserMap = new Map();
+            this.modelToItemMap = new Map();
             this.dataBlock.datasetInfo.userToModelMap.forEach((value, key) => this.modelToUserMap.set(value, key));
             this.dataBlock.datasetInfo.itemToModelMap.forEach((value, key) => this.modelToItemMap.set(value, key));
-            
+
         }
         else {
             this.lossFunc = "meanSquaredError";
@@ -119,7 +120,7 @@ export class Learner {
         let toPredict = [tf.fill([this.itemsNum, 1], userId), tf.range(0, this.itemsNum).reshape([-1, 1])]
         const { values, indices } = tf.topk((this.model.predictOnBatch(toPredict) as tf.Tensor).flatten(), k);
 
-        return (indices.arraySync() as number[]);
+        return (indices.arraySync() as number[]).map(e => this.modelToItemMap.get(e));
     }
 
     addRating(userId: number, itemId: number, rating: number, train: boolean = true): void | Promise<tf.History> {
@@ -127,12 +128,18 @@ export class Learner {
         if (this.dataBlock == null)
             throw new NonExistance(`No datablock to train on, please provoid a proper DataBlock `);
 
-
-        let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } },])
+        let toAdd = tf.data.array([
+            {
+                xs: {
+                    // map the user id and item id to the model index
+                    user: tf.tensor2d([[(this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`) as number)]]),
+                    item: tf.tensor2d([[(this.dataBlock.datasetInfo.itemToModelMap.get(`${itemId}`) as number)]])
+                },
+                ys: { rating: tf.tensor1d([rating]) }
+            }])
         this.dataBlock.trainingDataset = this.dataBlock.trainingDataset.concatenate(toAdd);
         this.dataBlock.datasetInfo.size++;
         if (train) {
-
             if (this.model == null)
                 throw new NonExistance(`No model to train, please provoid a proper model`);
 
@@ -149,7 +156,15 @@ export class Learner {
         if (this.dataBlock == null)
             throw new NonExistance(`No datablock to train on, please provoid a proper DataBlock `);
 
-        let toAdd = tf.data.array([{ xs: { user: tf.tensor2d([[userId]]), item: tf.tensor2d([[itemId]]) }, ys: { rating: tf.tensor1d([rating]) } },])
+        let toAdd = tf.data.array([
+            {
+                xs: {
+                    // map the user id and item id to the model index
+                    user: tf.tensor2d([[(this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`) as number)]]),
+                    item: tf.tensor2d([[(this.dataBlock.datasetInfo.itemToModelMap.get(`${itemId}`) as number)]])
+                },
+                ys: { rating: tf.tensor1d([rating]) }
+            }])
         this.dataBlock.trainingDataset = this.dataBlock.trainingDataset.concatenate(toAdd);
         this.dataBlock.datasetInfo.size++;
 
@@ -166,7 +181,7 @@ export class Learner {
         To add a new user embedding in the model.
         The embedding is generated based on the mean of the other users latent factors.
     */
-    newUser(): number {
+    newUser(userId: any) {
         if (this.usersNum == null)
             throw new NonExistance(
                 `usersNum does not exist, this is maybe because you did not feed Learner a DataBlock`
@@ -184,6 +199,7 @@ export class Learner {
             throw new NonExistance(`No model to train, please provoid a proper model`);
 
         this.usersNum += 1
+        this.dataBlock?.datasetInfo.userToModelMap.set(userId, this.usersNum);
         let userEmbeddingWeight = this.MFC.userEmbeddingLayer.getWeights()[0];
         userEmbeddingWeight = tf.concat([userEmbeddingWeight, userEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
         this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, [userEmbeddingWeight]);
@@ -196,7 +212,7 @@ export class Learner {
         To add a new item embedding in the model.
         The embedding is generated based on the mean of the other item latent factors.
     */
-    newItem() {
+    newItem(itemId: any) {
         if (this.usersNum == null)
             throw new NonExistance(
                 `usersNum does not exist, this is maybe because you did not feed Learner a DataBlock`
@@ -213,7 +229,8 @@ export class Learner {
         if (this.model == null || this.MFC == null)
             throw new NonExistance(`No model to train, please provoid a proper model`);
 
-        this.itemsNum += 1
+        this.itemsNum += 1;
+        this.dataBlock?.datasetInfo.itemToModelMap.set(itemId, this.itemsNum);
         let itemEmbeddingWeight = this.MFC.itemEmbeddingLayer.getWeights()[0];
         itemEmbeddingWeight = tf.concat([itemEmbeddingWeight, itemEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
         this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, itemEmbeddingWeight = [itemEmbeddingWeight]);
@@ -227,32 +244,36 @@ export class Learner {
     /**
        To retrieve the k similar users of a user 
     */
-    mostSimilarUsers(id: number, k = 10): number[] {
+    mostSimilarUsers(id: any, k = 10): string[] {
 
         if (this.model == null || this.MFC == null)
             throw new NonExistance(`No model to train, please provoid a proper model`);
 
         if (k < 1) throw new ValueError(`the k in mostSimilarUsers >= 1`);
+
         let userEmbeddingWeight = this.MFC.userEmbeddingLayer.getWeights()[0];
-        let similarity = cosineSimilarity(userEmbeddingWeight, userEmbeddingWeight.slice(id, 1))
+        let mappedId = this.dataBlock?.datasetInfo.userToModelMap.get(`${id}`) as number
+        let similarity = cosineSimilarity(userEmbeddingWeight, userEmbeddingWeight.slice(mappedId, 1));
         let { values, indices } = tf.topk(similarity, k + 1);
         let indicesArray = (indices.arraySync() as number[])
-        return indicesArray.filter((e: number) => e !== id)
+        return indicesArray.filter((e: number) => e !== mappedId).map(e => this.modelToUserMap.get(e));
     }
 
     /**
        To retrieve the k similar items of an item 
     */
-    mostSimilarItems(id: number, k = 10): number[] {
+    mostSimilarItems(id: any, k = 10): number[] {
         if (this.model == null || this.MFC == null)
             throw new NonExistance(`No model to train, please provoid a proper model`);
 
         if (k < 1) throw new ValueError(`the k in mostSimilarItems >= 1`);
+
         let itemEmbeddingWeight = this.MFC.itemEmbeddingLayer.getWeights()[0];
-        let similarity = euclideandistance(itemEmbeddingWeight, itemEmbeddingWeight.slice(id, 1))
+        let mappedId = this.dataBlock?.datasetInfo.itemToModelMap.get(`${id}`) as number
+        let similarity = euclideandistance(itemEmbeddingWeight, itemEmbeddingWeight.slice(mappedId, 1))
         let { values, indices } = tf.topk(similarity, k + 1);
         let indicesArray = (indices.arraySync() as number[])
-        return indicesArray.filter((e: number) => e !== id)
+        return indicesArray.filter((e: number) => e !== mappedId).map(e => this.modelToItemMap.get(e));
     }
 
     /**

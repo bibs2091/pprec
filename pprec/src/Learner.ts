@@ -233,7 +233,7 @@ export class Learner {
         this.dataBlock?.datasetInfo.itemToModelMap.set(itemId, this.itemsNum);
         let itemEmbeddingWeight = this.MFC.itemEmbeddingLayer.getWeights()[0];
         itemEmbeddingWeight = tf.concat([itemEmbeddingWeight, itemEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
-        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, itemEmbeddingWeight = [itemEmbeddingWeight]);
+        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, undefined, [itemEmbeddingWeight]);
         this.model = this.MFC.model;
         this.setOptimizer(this.optimizerName);
         return this.itemsNum //the new user ID

@@ -61,22 +61,24 @@ export class DataBlock {
             columnConfigs: {
                 [options.userColumn]: {
                     required: true,
-                    dtype: "float32"
+                    // dtype: "float32"
                 },
                 [options.itemColumn]: {
                     required: true,
-                    dtype: "float32"
+                    // dtype: "float32"
                 },
                 [options.ratingColumn]: {
                     isLabel: true,
-                    dtype: "float32"
+                    // dtype: "float32"
                 }
             }
-        })).shuffle(
+        })).shuffle(  //shuffle the dataset
             (this.datasetInfo.size > 1e5) ? 1e5 : this.datasetInfo.size,
             (options?.seed == null) ? undefined : options?.seed.toString(),
             false
-        ) //shuffle the dataset
+        ).map((x: any) => (
+            { xs: { user: this.datasetInfo.userToModelMap.get(`${x.xs[options.userColumn]}`), item: this.datasetInfo.itemToModelMap.get(`${x.xs[options.itemColumn]}`) }, ys: { rating: Number(x.ys[options.ratingColumn]) } }
+        ))
 
 
         //split the dataset into train and valid set
@@ -85,18 +87,11 @@ export class DataBlock {
 
         let trainSize = Math.round((1 - validationPercentage) * this.datasetInfo.size)
 
-        this.trainingDataset = csvDataset.take(trainSize)
-            .map((x: Idataset2) => (
-                { xs: { user: this.datasetInfo.userToModelMap.get(`${x.xs[options.userColumn]}`), item: this.datasetInfo.itemToModelMap.get(`${x.xs[options.itemColumn]}`) }, ys: { rating: x.ys[options.ratingColumn] } }
-            ))
-            .batch(this.batchSize);
+        this.trainingDataset = csvDataset.take(trainSize).batch(this.batchSize);
         this.trainingDataset = this.trainingDataset.map((x: Idataset) => ({ xs: { user: x.xs.user.reshape([-1, 1]), item: x.xs.item.reshape([-1, 1]) }, ys: x.ys }))
 
         if (validationPercentage > 0) {
             this.validationDataset = csvDataset.skip(trainSize)
-                .map((x: Idataset2) => (
-                    { xs: { user: this.datasetInfo.userToModelMap.get(`${x.xs[options.userColumn]}`), item: this.datasetInfo.itemToModelMap.get(`${x.xs[options.itemColumn]}`) }, ys: { rating: x.ys[options.ratingColumn] } }
-                ))
                 .batch(this.batchSize);
             this.validationDataset = this.validationDataset.map((x: Idataset) => ({ xs: { user: x.xs.user.reshape([-1, 1]), item: x.xs.item.reshape([-1, 1]) }, ys: x.ys }))
         }

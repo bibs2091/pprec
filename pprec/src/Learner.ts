@@ -117,13 +117,16 @@ export class Learner {
         if (this.model == null)
             throw new NonExistance(`No model to train, please provoid a proper model`);
 
-        let toPredict = [tf.fill([this.itemsNum, 1], userId), tf.range(0, this.itemsNum).reshape([-1, 1])]
+        // to fix map
+        let toPredict = [
+            tf.fill([this.itemsNum, 1], (this.dataBlock?.datasetInfo.userToModelMap.get(`${userId}`) as number)),
+            tf.range(0, this.itemsNum).reshape([-1, 1])];
         const { values, indices } = tf.topk((this.model.predictOnBatch(toPredict) as tf.Tensor).flatten(), k);
 
         return (indices.arraySync() as number[]).map(e => this.modelToItemMap.get(e));
     }
 
-    addRating(userId: number, itemId: number, rating: number, train: boolean = true): void | Promise<tf.History> {
+    addRating(userId: any, itemId: any, rating: any, train: boolean = true): void | Promise<tf.History> {
 
         if (this.dataBlock == null)
             throw new NonExistance(`No datablock to train on, please provoid a proper DataBlock `);
@@ -135,7 +138,7 @@ export class Learner {
                     user: tf.tensor2d([[(this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`) as number)]]),
                     item: tf.tensor2d([[(this.dataBlock.datasetInfo.itemToModelMap.get(`${itemId}`) as number)]])
                 },
-                ys: { rating: tf.tensor1d([rating]) }
+                ys: { rating: tf.tensor1d([Number(rating)]) }
             }])
         this.dataBlock.trainingDataset = this.dataBlock.trainingDataset.concatenate(toAdd);
         this.dataBlock.datasetInfo.size++;
@@ -151,7 +154,7 @@ export class Learner {
     }
 
 
-    async addRatingSync(userId: number, itemId: number, rating: number, train: boolean = true) {
+    async addRatingSync(userId: any, itemId: any, rating: any, train: boolean = true) {
 
         if (this.dataBlock == null)
             throw new NonExistance(`No datablock to train on, please provoid a proper DataBlock `);
@@ -163,7 +166,7 @@ export class Learner {
                     user: tf.tensor2d([[(this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`) as number)]]),
                     item: tf.tensor2d([[(this.dataBlock.datasetInfo.itemToModelMap.get(`${itemId}`) as number)]])
                 },
-                ys: { rating: tf.tensor1d([rating]) }
+                ys: { rating: tf.tensor1d([Number(rating)]) }
             }])
         this.dataBlock.trainingDataset = this.dataBlock.trainingDataset.concatenate(toAdd);
         this.dataBlock.datasetInfo.size++;

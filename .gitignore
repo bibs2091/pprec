@@ -5,4 +5,4 @@ myModel
 pprec/dir
 pprec-private/dir
 dist/
-pprec/examples/rating.csv
+pprec/examples/*.csv

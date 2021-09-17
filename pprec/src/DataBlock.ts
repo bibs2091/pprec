@@ -22,7 +22,7 @@ interface Idataset2 {
         [user_item: string]: any;
     }
     ys: {
-        rating: number;
+        rating: any;
     }
 }
 
@@ -50,7 +50,9 @@ export class DataBlock {
     */
     async fromCsv(path: string, options: optionsDataBlock) {
         let myPath = "file://" + path;
-        this.datasetInfo = await this.getInfoOnCsv(path, options.userColumn, options.itemColumn)
+
+        options.delimiter = (options.delimiter == null) ? ',' : options?.delimiter;
+        this.datasetInfo = await this.getInfoOnCsv(path, options.userColumn, options.itemColumn, options.delimiter)
         this.ratingRange = options.ratingRange;
         let csvDataset: tf.data.Dataset<any> = (tf.data.csv(
             myPath, {
@@ -85,7 +87,7 @@ export class DataBlock {
 
         this.trainingDataset = csvDataset.take(trainSize)
             .map((x: Idataset2) => (
-                { xs: { user: this.datasetInfo.userToModelMap.get(`${x.xs[options.userColumn]}`), item: this.datasetInfo.itemToModelMap.get(`${x.xs[options.itemColumn]}`) }, ys: x.ys }
+                { xs: { user: this.datasetInfo.userToModelMap.get(`${x.xs[options.userColumn]}`), item: this.datasetInfo.itemToModelMap.get(`${x.xs[options.itemColumn]}`) }, ys: { rating: x.ys[options.ratingColumn] } }
             ))
             .batch(this.batchSize);
         this.trainingDataset = this.trainingDataset.map((x: Idataset) => ({ xs: { user: x.xs.user.reshape([-1, 1]), item: x.xs.item.reshape([-1, 1]) }, ys: x.ys }))
@@ -93,7 +95,7 @@ export class DataBlock {
         if (validationPercentage > 0) {
             this.validationDataset = csvDataset.skip(trainSize)
                 .map((x: Idataset2) => (
-                    { xs: { user: this.datasetInfo.userToModelMap.get(`${x.xs[options.userColumn]}`), item: this.datasetInfo.itemToModelMap.get(`${x.xs[options.itemColumn]}`) }, ys: x.ys }
+                    { xs: { user: this.datasetInfo.userToModelMap.get(`${x.xs[options.userColumn]}`), item: this.datasetInfo.itemToModelMap.get(`${x.xs[options.itemColumn]}`) }, ys: { rating: x.ys[options.ratingColumn] } }
                 ))
                 .batch(this.batchSize);
             this.validationDataset = this.validationDataset.map((x: Idataset) => ({ xs: { user: x.xs.user.reshape([-1, 1]), item: x.xs.item.reshape([-1, 1]) }, ys: x.ys }))
@@ -106,7 +108,7 @@ export class DataBlock {
         input the item, users, and ratings tensors
     */
     fromTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number = 0, batchSize: number = 32, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null): DataBlock {
-        this.datasetInfo = { size: 0, usersNum: 0, itemsNum: 0, userToModelMap: new Map(), itemToModelMap: new Map()  }
+        this.datasetInfo = { size: 0, usersNum: 0, itemsNum: 0, userToModelMap: new Map(), itemToModelMap: new Map() }
         this.datasetInfo.size = ratings.flatten().shape[0];
 
         // shuffle the dataset
@@ -134,36 +136,36 @@ export class DataBlock {
         mainly used in fromCsv method
         returns datasetInfo object
     */
-        getInfoOnCsv(path: string, userColumn: string, itemColumn: string): Promise<IdatasetInfo> {
-            let datasetInfo_ = new Promise<IdatasetInfo>(function (resolve, reject) {
-                let csvInfo = { size: 0, usersNum: 0, itemsNum: 0, userToModelMap: new Map(), itemToModelMap: new Map() };
-                let usersIndex: number = 0;
-                let itemsIndex: number = 0;
-    
-                //using the fast-csv parse
-                csv.parseFile(path, { headers: true })
-                    .on('error', error => console.error(error))
-                    .on('data', (data) => {
-                        if (!csvInfo.userToModelMap.has(`${data[userColumn]}`)) {
-                            csvInfo.userToModelMap.set(`${data[userColumn]}`, usersIndex);
-                            usersIndex += 1;
-                        }
-                        if (!csvInfo.itemToModelMap.has(`${data[itemColumn]}`)) {
-                            csvInfo.itemToModelMap.set(`${data[itemColumn]}`, itemsIndex);
-                            itemsIndex += 1;
-                        }
-                    })
-                    .on('end', (rowCount: number) => {
-                        csvInfo.size = rowCount;
-                        csvInfo.usersNum = usersIndex
-                        csvInfo.itemsNum = itemsIndex
-                        return resolve(csvInfo);
-                    })
-            });
-            return datasetInfo_;
-        }
+    getInfoOnCsv(path: string, userColumn: string, itemColumn: string, delimiter: string): Promise<IdatasetInfo> {
+        let datasetInfo_ = new Promise<IdatasetInfo>(function (resolve, reject) {
+            let csvInfo = { size: 0, usersNum: 0, itemsNum: 0, userToModelMap: new Map(), itemToModelMap: new Map() };
+            let usersIndex: number = 0;
+            let itemsIndex: number = 0;
 
-    
+            //using the fast-csv parse
+            csv.parseFile(path, { headers: true, delimiter: delimiter })
+                .on('error', error => console.error(error))
+                .on('data', (data) => {
+                    if (!csvInfo.userToModelMap.has(`${data[userColumn]}`)) {
+                        csvInfo.userToModelMap.set(`${data[userColumn]}`, usersIndex);
+                        usersIndex += 1;
+                    }
+                    if (!csvInfo.itemToModelMap.has(`${data[itemColumn]}`)) {
+                        csvInfo.itemToModelMap.set(`${data[itemColumn]}`, itemsIndex);
+                        itemsIndex += 1;
+                    }
+                })
+                .on('end', (rowCount: number) => {
+                    csvInfo.size = rowCount;
+                    csvInfo.usersNum = usersIndex
+                    csvInfo.itemsNum = itemsIndex
+                    return resolve(csvInfo);
+                })
+        });
+        return datasetInfo_;
+    }
+
+
 
     /**
         Split the tensors into training and validation set.

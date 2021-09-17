@@ -6,6 +6,11 @@ async function main() {
         userColumn: 'user', itemColumn: 'movie', ratingColumn: 'rating', batchSize: 64, ratingRange: [1, 5]
     }); //parsing the dataset from csv
 
+    // const IMDB = await dataBlock().fromCsv("./examples/books-ratings.csv", {
+    //     userColumn: 'User-ID', itemColumn: 'ISBN', ratingColumn: 'Book-Rating', batchSize: 64,
+    //     ratingRange: [0, 10], 
+    // });
+    
     const myLearner = learner(IMDB, { learningRate: 1e-3 }); //Creating learner from the IMDB datablock    
 
     // await myLearner.fit(1); //train the mode for one epoch

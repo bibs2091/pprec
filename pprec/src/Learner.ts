@@ -4,6 +4,7 @@ import { DataBlock } from './DataBlock'
 import { cosineSimilarity, euclideandistance } from './utils'
 import { ValueError, NonExistance } from './errors'
 import { io } from '@tensorflow/tfjs-core';
+import * as fs from 'fs';
 
 interface optionsLearner {
     learningRate: number; embeddingOutputSize?: number; lossFunc?: string; optimizerName?: string; l2Labmda?: number
@@ -280,22 +281,55 @@ export class Learner {
     }
 
     /**
-       To save the architecture and the weights of the model in a given path
+       To save the architecture and the weights and id Maps of the model in a given path
     */
     save(path: string): Promise<io.SaveResult> {
+        let userMap = JSON.stringify(Array.from((this.dataBlock?.datasetInfo.userToModelMap as Map<any, number>).entries()))
+        fs.writeFileSync(`${path}_userToModelMap.txt`, userMap)
+
+        let itemMap = JSON.stringify(Array.from((this.dataBlock?.datasetInfo.itemToModelMap as Map<any, number>).entries()))
+        fs.writeFileSync(`${path}_itemToModelMap.txt`, itemMap)
+
+
         return this.model.save('file://' + path);
     }
 
     /**
-    * To load a pre-saved model 
+    * To load a pre-saved model
     * 
     * if your data does not already have a DataBlock, only recommendItem method will work
     *   
     */
-    async load(path: string): Promise<void> {
+    async load(path: string): Promise<Learner> {
+
+
+
+
+
         this.model = await tf.loadLayersModel('file://' + path + '/model.json');
         this.usersNum = this.model.getWeights()[0].shape[0] - 1;
         this.itemsNum = this.model.getWeights()[1].shape[0] - 1;
         this.embeddingOutputSize = this.model.getWeights()[0].shape[1];
+
+        // load userToModelMap and itemToModelMap
+        let loadedUserMap: string = await fs.readFileSync(`${path}_userToModelMap.txt`, 'utf8');
+        let loadedItemMap: string = await fs.readFileSync(`${path}_itemToModelMap.txt`, 'utf8');
+
+        if (this.dataBlock == null) {
+            this.dataBlock = new DataBlock()
+            this.modelToUserMap = new Map();
+            this.modelToItemMap = new Map();
+        }
+
+        this.dataBlock.datasetInfo = {
+            size: this.dataBlock.datasetInfo == null ? 0 : this.dataBlock.datasetInfo.size,
+            usersNum: this.usersNum, itemsNum: this.itemsNum,
+            userToModelMap: new Map(JSON.parse(loadedUserMap)), itemToModelMap: new Map(JSON.parse(loadedItemMap))
+        }
+        this.dataBlock.datasetInfo.userToModelMap.forEach((value, key) => this.modelToUserMap.set(value, key));
+        this.dataBlock.datasetInfo.itemToModelMap.forEach((value, key) => this.modelToItemMap.set(value, key));
+
+
+        return this;
     }
 }

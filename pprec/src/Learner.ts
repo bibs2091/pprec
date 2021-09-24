@@ -325,6 +325,7 @@ export class Learner {
         this.usersNum = this.model.getWeights()[0].shape[0] - 1;
         this.itemsNum = this.model.getWeights()[1].shape[0] - 1;
         this.embeddingOutputSize = this.model.getWeights()[0].shape[1];
+        this.setOptimizer(this.optimizerName);
 
         // load userToModelMap and itemToModelMap
         let loadedUserMap: string = await fs.readFileSync(`${path}_userToModelMap.txt`, 'utf8');

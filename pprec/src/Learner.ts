@@ -141,8 +141,16 @@ export class Learner {
                 },
                 ys: { rating: tf.tensor1d([Number(rating)]) }
             }])
-        this.dataBlock.trainingDataset = this.dataBlock.trainingDataset.concatenate(toAdd);
-        this.dataBlock.datasetInfo.size++;
+
+        if (this.dataBlock.datasetInfo.size == 0) {
+            this.dataBlock.trainingDataset = toAdd
+            this.dataBlock.datasetInfo.size++;
+        }
+        else {
+            this.dataBlock.trainingDataset = this.dataBlock.trainingDataset.concatenate(toAdd);
+            this.dataBlock.datasetInfo.size++;
+        }
+
         if (train) {
             if (this.model == null)
                 throw new NonExistance(`No model to train, please provoid a proper model`);
@@ -169,8 +177,15 @@ export class Learner {
                 },
                 ys: { rating: tf.tensor1d([Number(rating)]) }
             }])
-        this.dataBlock.trainingDataset = this.dataBlock.trainingDataset.concatenate(toAdd);
-        this.dataBlock.datasetInfo.size++;
+
+        if (this.dataBlock.datasetInfo.size == 0) {
+            this.dataBlock.trainingDataset = toAdd
+            this.dataBlock.datasetInfo.size++;
+        }
+        else {
+            this.dataBlock.trainingDataset = this.dataBlock.trainingDataset.concatenate(toAdd);
+            this.dataBlock.datasetInfo.size++;
+        }
 
         if (train) {
             await this.model.fitDataset(toAdd, {

@@ -219,7 +219,7 @@ export class Learner {
 
         this.usersNum += 1
         this.dataBlock?.datasetInfo.userToModelMap.set(userId, this.usersNum);
-        let userEmbeddingWeight = this.MFC.userEmbeddingLayer.getWeights()[0];
+        let userEmbeddingWeight = this.model.getWeights()[0];
         userEmbeddingWeight = tf.concat([userEmbeddingWeight, userEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
         this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, [userEmbeddingWeight]);
         this.model = this.MFC.model;
@@ -245,12 +245,12 @@ export class Learner {
         if (this.embeddingOutputSize == null)
             throw new NonExistance(`embeddingOutputSize does not exist`);
 
-        if (this.model == null || this.MFC == null)
+        if (this.model == null)
             throw new NonExistance(`No model to train, please provoid a proper model`);
 
         this.itemsNum += 1;
         this.dataBlock?.datasetInfo.itemToModelMap.set(itemId, this.itemsNum);
-        let itemEmbeddingWeight = this.MFC.itemEmbeddingLayer.getWeights()[0];
+        let itemEmbeddingWeight = this.model.getWeights()[1];
         itemEmbeddingWeight = tf.concat([itemEmbeddingWeight, itemEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
         this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, undefined, [itemEmbeddingWeight]);
         this.model = this.MFC.model;
@@ -265,12 +265,12 @@ export class Learner {
     */
     mostSimilarUsers(id: any, k = 10): string[] {
 
-        if (this.model == null || this.MFC == null)
+        if (this.model == null)
             throw new NonExistance(`No model to train, please provoid a proper model`);
 
         if (k < 1) throw new ValueError(`the k in mostSimilarUsers >= 1`);
 
-        let userEmbeddingWeight = this.MFC.userEmbeddingLayer.getWeights()[0];
+        let userEmbeddingWeight = this.model.getWeights()[0];
         let mappedId = this.dataBlock?.datasetInfo.userToModelMap.get(`${id}`) as number
         let similarity = cosineSimilarity(userEmbeddingWeight, userEmbeddingWeight.slice(mappedId, 1));
         let { values, indices } = tf.topk(similarity, k + 1);
@@ -282,12 +282,12 @@ export class Learner {
        To retrieve the k similar items of an item 
     */
     mostSimilarItems(id: any, k = 10): number[] {
-        if (this.model == null || this.MFC == null)
+        if (this.model == null)
             throw new NonExistance(`No model to train, please provoid a proper model`);
 
         if (k < 1) throw new ValueError(`the k in mostSimilarItems >= 1`);
 
-        let itemEmbeddingWeight = this.MFC.itemEmbeddingLayer.getWeights()[0];
+        let itemEmbeddingWeight = this.model.getWeights()[1];
         let mappedId = this.dataBlock?.datasetInfo.itemToModelMap.get(`${id}`) as number
         let similarity = euclideandistance(itemEmbeddingWeight, itemEmbeddingWeight.slice(mappedId, 1))
         let { values, indices } = tf.topk(similarity, k + 1);
@@ -316,11 +316,6 @@ export class Learner {
     *   
     */
     async load(path: string): Promise<Learner> {
-
-
-
-
-
         this.model = await tf.loadLayersModel('file://' + path + '/model.json');
         this.usersNum = this.model.getWeights()[0].shape[0] - 1;
         this.itemsNum = this.model.getWeights()[1].shape[0] - 1;

@@ -1,6 +1,6 @@
 {
   "name": "pprec",
-  "version": "0.0.7",
+  "version": "0.0.75",
   "description": "a recommendation system engine for web applications with the ability to preserve privacy",
   "types": "dir",
   "main": "dir/main.js",
@@ -37,5 +37,5 @@
   "bugs": {
     "url": "https://github.com/bibs2091/pprec/issues"
   },
-  "homepage": "https://github.com/bibs2091/pprec#readme"
+  "homepage": "https://pprec.netlify.app/"
 }

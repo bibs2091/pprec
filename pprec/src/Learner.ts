@@ -189,7 +189,7 @@ export class Learner {
 
         if (train) {
             await this.model.fitDataset(toAdd, {
-                epochs: 1,
+                epochs: 3,
                 verbose: 0
             })
         }
@@ -214,7 +214,7 @@ export class Learner {
         if (this.embeddingOutputSize == null)
             throw new NonExistance(`embeddingOutputSize does not exist`);
 
-        if (this.model == null || this.MFC == null)
+        if (this.model == null)
             throw new NonExistance(`No model to train, please provoid a proper model`);
 
         this.usersNum += 1
@@ -289,7 +289,7 @@ export class Learner {
 
         let itemEmbeddingWeight = this.model.getWeights()[1];
         let mappedId = this.dataBlock?.datasetInfo.itemToModelMap.get(`${id}`) as number
-        let similarity = euclideandistance(itemEmbeddingWeight, itemEmbeddingWeight.slice(mappedId, 1))
+        let similarity = cosineSimilarity(itemEmbeddingWeight, itemEmbeddingWeight.slice(mappedId, 1))
         let { values, indices } = tf.topk(similarity, k + 1);
         let indicesArray = (indices.arraySync() as number[])
         return indicesArray.filter((e: number) => e !== mappedId).map(e => this.modelToItemMap.get(e));

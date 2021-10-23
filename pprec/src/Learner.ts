@@ -3,7 +3,7 @@ import * as tf from '@tensorflow/tfjs-node'
 import { DataBlock } from './DataBlock'
 import { cosineSimilarity, euclideandistance } from './utils'
 import { ValueError, NonExistance } from './errors'
-import { io } from '@tensorflow/tfjs-core';
+import { io, range } from '@tensorflow/tfjs-core';
 import * as fs from 'fs';
 
 interface optionsLearner {
@@ -122,8 +122,19 @@ export class Learner {
         let toPredict = [
             tf.fill([this.itemsNum, 1], (this.dataBlock?.datasetInfo.userToModelMap.get(`${userId}`) as number)),
             tf.range(0, this.itemsNum).reshape([-1, 1])];
-        const { values, indices } = tf.topk((this.model.predictOnBatch(toPredict) as tf.Tensor).flatten(), k);
 
+
+        let toPredictResults = (this.model.predictOnBatch(toPredict) as tf.Tensor).flatten()
+
+        if (this.dataBlock) {
+            let PredictMask = new Array(toPredictResults.shape[0]).fill(true);
+            let usersIdMovies = this.dataBlock.usersMovies[userId]
+            PredictMask = PredictMask.map(function (value, index) {
+                return usersIdMovies.indexOf(index) !== -1;
+            })
+            toPredictResults = toPredictResults.where(PredictMask, [-100]);
+        }
+        const { values, indices } = tf.topk(toPredictResults, k);
         return (indices.arraySync() as number[]).map(e => this.modelToItemMap.get(e));
     }
 

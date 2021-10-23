@@ -40,8 +40,10 @@ export class DataBlock {
     trainingDataset: tf.data.Dataset<any>;
     validationDataset: tf.data.Dataset<any>;
     datasetInfo: IdatasetInfo;
+    usersMovies: any;
     batchSize: number;
     ratingRange?: number[];
+
 
 
     /**
@@ -226,4 +228,11 @@ export class DataBlock {
     size(): number {
         return this.datasetInfo.size;
     }
+
+    async test(){
+        this.usersMovies = await fs.readFileSync("examples/usersMovies.json", 'utf8');
+        this.usersMovies = JSON.parse(this.usersMovies);
+        tf.tensor(this.usersMovies[1]);
+    }
+
 }

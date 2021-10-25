@@ -1,6 +1,6 @@
 {
   "name": "pprec",
-  "version": "0.0.75",
+  "version": "0.0.8",
   "description": "a recommendation system engine for web applications with the ability to preserve privacy",
   "types": "dir",
   "main": "dir/main.js",

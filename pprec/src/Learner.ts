@@ -317,6 +317,18 @@ export class Learner {
     }
 
     /**
+      Use this when a user view an item but did not rate it, allowing pprec to not re-recommend this item
+    */
+    viewed(userId: any, itemId: any){
+        let userIdMapped = (this.dataBlock?.datasetInfo.userToModelMap.get(`${userId}`) as number);
+        let itemIdMapped = (this.dataBlock?.datasetInfo.itemToModelMap.get(`${itemId}`) as number);
+        console.log(userIdMapped);
+        console.log(itemIdMapped);
+        
+        this.dataBlock?.client.SADD(userIdMapped.toString(), itemIdMapped.toString());
+    }
+
+    /**
        To save the architecture and the weights and id Maps of the model in a given path
     */
     save(path: string): Promise<io.SaveResult> {

@@ -2,7 +2,6 @@ import * as tf from '@tensorflow/tfjs-node'
 import * as csv from 'fast-csv';
 import * as fs from 'fs';
 import { createClient } from 'redis';
-
 interface IdatasetInfo {
     size: number; usersNum: number; itemsNum: number;
     userToModelMap: Map<any, number>, itemToModelMap: Map<any, number>
@@ -156,9 +155,12 @@ export class DataBlock {
                         csvInfo.itemToModelMap.set(`${data[itemColumn]}`, itemsIndex);
                         itemsIndex += 1;
                     }
-                    
-                    client.SADD(data[userColumn], data[itemColumn]);
-                    
+
+                    client.SADD(
+                        csvInfo.userToModelMap.get(data[userColumn]).toString(),
+                        csvInfo.itemToModelMap.get(data[itemColumn]).toString()
+                    );
+
                 })
                 .on('end', (rowCount: number) => {
                     csvInfo.size = rowCount;
@@ -238,7 +240,7 @@ export class DataBlock {
     }
 
 
-    async redisConfig(){
+    async redisConfig() {
         this.client = createClient();
         this.client.on('error', (err) => console.log('Redis Client Error', err));
         await this.client.connect()

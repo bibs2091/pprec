@@ -133,28 +133,33 @@ export class Learner {
                 return usersIdMovies.indexOf(index.toString()) == -1;
             })
             toPredictResults = toPredictResults.where(PredictMask, [-100]);
-            
+
         }
         const { values, indices } = tf.topk(toPredictResults, k);
         return (indices.arraySync() as number[]).map(e => this.modelToItemMap.get(e));
 
     }
 
+    /**
+        To add a rating of a user on a certain item and add it to redis database
+    */
     addRating(userId: any, itemId: any, rating: any, train: boolean = true): void | Promise<tf.History> {
 
         if (this.dataBlock == null)
             throw new NonExistance(`No datablock to train on, please provoid a proper DataBlock `);
-
+        let userIdMapped = (this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`) as number);
+        let itemIdMapped = (this.dataBlock.datasetInfo.itemToModelMap.get(`${itemId}`) as number);
         let toAdd = tf.data.array([
             {
                 xs: {
                     // map the user id and item id to the model index
-                    user: tf.tensor2d([[(this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`) as number)]]),
-                    item: tf.tensor2d([[(this.dataBlock.datasetInfo.itemToModelMap.get(`${itemId}`) as number)]])
+                    user: tf.tensor2d([[userIdMapped]]),
+                    item: tf.tensor2d([[itemIdMapped]])
                 },
                 ys: { rating: tf.tensor1d([Number(rating)]) }
             }])
 
+        this.dataBlock.client.SADD(userIdMapped.toString(), itemIdMapped.toString());
         if (this.dataBlock.datasetInfo.size == 0) {
             this.dataBlock.trainingDataset = toAdd
             this.dataBlock.datasetInfo.size++;
@@ -181,16 +186,19 @@ export class Learner {
         if (this.dataBlock == null)
             throw new NonExistance(`No datablock to train on, please provoid a proper DataBlock `);
 
+        let userIdMapped = (this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`) as number);
+        let itemIdMapped = (this.dataBlock.datasetInfo.itemToModelMap.get(`${itemId}`) as number);
         let toAdd = tf.data.array([
             {
                 xs: {
                     // map the user id and item id to the model index
-                    user: tf.tensor2d([[(this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`) as number)]]),
-                    item: tf.tensor2d([[(this.dataBlock.datasetInfo.itemToModelMap.get(`${itemId}`) as number)]])
+                    user: tf.tensor2d([[userIdMapped]]),
+                    item: tf.tensor2d([[itemIdMapped]])
                 },
                 ys: { rating: tf.tensor1d([Number(rating)]) }
             }])
 
+        await this.dataBlock.client.SADD(userIdMapped.toString(), itemIdMapped.toString());
         if (this.dataBlock.datasetInfo.size == 0) {
             this.dataBlock.trainingDataset = toAdd
             this.dataBlock.datasetInfo.size++;
@@ -352,7 +360,6 @@ export class Learner {
         }
         this.dataBlock.datasetInfo.userToModelMap.forEach((value, key) => this.modelToUserMap.set(value, key));
         this.dataBlock.datasetInfo.itemToModelMap.forEach((value, key) => this.modelToItemMap.set(value, key));
-
 
         return this;
     }

@@ -109,7 +109,7 @@ export class Learner {
     /**
         To recommend k items for a user given their ID
     */
-    recommendItems(userId: number, k: number): number[] {
+    async recommendItems(userId: number, k: number, alreadyWatched: boolean = false): Promise<number[]> {
         if (this.itemsNum == null)
             throw new NonExistance(
                 `itemsNum does not exist, this is maybe because you did not feed Learner a DataBlock`
@@ -126,16 +126,18 @@ export class Learner {
 
         let toPredictResults = (this.model.predictOnBatch(toPredict) as tf.Tensor).flatten()
 
-        if (this.dataBlock) {
+        if (this.dataBlock && !alreadyWatched) {
             let PredictMask = new Array(toPredictResults.shape[0]).fill(true);
-            let usersIdMovies = this.dataBlock.usersMovies[userId]
+            let usersIdMovies = await this.dataBlock.client.SMEMBERS(userId.toString())
             PredictMask = PredictMask.map(function (value, index) {
-                return usersIdMovies.indexOf(index) !== -1;
+                return usersIdMovies.indexOf(index.toString()) == -1;
             })
             toPredictResults = toPredictResults.where(PredictMask, [-100]);
+            
         }
         const { values, indices } = tf.topk(toPredictResults, k);
         return (indices.arraySync() as number[]).map(e => this.modelToItemMap.get(e));
+
     }
 
     addRating(userId: any, itemId: any, rating: any, train: boolean = true): void | Promise<tf.History> {

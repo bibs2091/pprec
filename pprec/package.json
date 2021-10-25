@@ -15,8 +15,10 @@
   "license": "ISC",
   "dependencies": {
     "@tensorflow/tfjs-node": "^3.9.0",
+    "@types/redis": "^2.8.32",
     "fast-csv": "^4.3.6",
-    "node-pre-gyp": "^0.17.0"
+    "node-pre-gyp": "^0.17.0",
+    "redis": "^4.0.0-rc.3"
   },
   "devDependencies": {
     "@types/node": "^16.4.10",

@@ -1,6 +1,7 @@
 import * as tf from '@tensorflow/tfjs-node'
 import * as csv from 'fast-csv';
 import * as fs from 'fs';
+import { createClient } from 'redis';
 
 interface IdatasetInfo {
     size: number; usersNum: number; itemsNum: number;
@@ -42,9 +43,13 @@ export class DataBlock {
     datasetInfo: IdatasetInfo;
     usersMovies: any;
     batchSize: number;
+    client: any;
     ratingRange?: number[];
 
 
+    constructor() {
+        this.redisConfig().then(e => console.log("connected"))
+    }
 
     /**
         Create a datablock from a csv file.
@@ -134,11 +139,11 @@ export class DataBlock {
         returns datasetInfo object
     */
     getInfoOnCsv(path: string, userColumn: string, itemColumn: string, delimiter: string): Promise<IdatasetInfo> {
+        let client = this.client
         let datasetInfo_ = new Promise<IdatasetInfo>(function (resolve, reject) {
             let csvInfo = { size: 0, usersNum: 0, itemsNum: 0, userToModelMap: new Map(), itemToModelMap: new Map() };
             let usersIndex: number = 0;
             let itemsIndex: number = 0;
-
             //using the fast-csv parse
             csv.parseFile(path, { headers: true, delimiter: delimiter })
                 .on('error', error => console.error(error))
@@ -151,6 +156,9 @@ export class DataBlock {
                         csvInfo.itemToModelMap.set(`${data[itemColumn]}`, itemsIndex);
                         itemsIndex += 1;
                     }
+                    
+                    client.SADD(data[userColumn], data[itemColumn]);
+                    
                 })
                 .on('end', (rowCount: number) => {
                     csvInfo.size = rowCount;
@@ -229,10 +237,11 @@ export class DataBlock {
         return this.datasetInfo.size;
     }
 
-    async test(){
-        this.usersMovies = await fs.readFileSync("examples/usersMovies.json", 'utf8');
-        this.usersMovies = JSON.parse(this.usersMovies);
-        tf.tensor(this.usersMovies[1]);
+
+    async redisConfig(){
+        this.client = createClient();
+        this.client.on('error', (err) => console.log('Redis Client Error', err));
+        await this.client.connect()
     }
 
 }

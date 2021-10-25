@@ -55,7 +55,6 @@ export class Learner {
             this.modelToItemMap = new Map();
             this.dataBlock.datasetInfo.userToModelMap.forEach((value, key) => this.modelToUserMap.set(value, key));
             this.dataBlock.datasetInfo.itemToModelMap.forEach((value, key) => this.modelToItemMap.set(value, key));
-
         }
         else {
             this.lossFunc = "meanSquaredError";
@@ -117,10 +116,10 @@ export class Learner {
 
         if (this.model == null)
             throw new NonExistance(`No model to train, please provoid a proper model`);
-
+        let userIdMapped = this.dataBlock?.datasetInfo.userToModelMap.get(`${userId}`) as number
         // to fix map
         let toPredict = [
-            tf.fill([this.itemsNum, 1], (this.dataBlock?.datasetInfo.userToModelMap.get(`${userId}`) as number)),
+            tf.fill([this.itemsNum, 1], userIdMapped),
             tf.range(0, this.itemsNum).reshape([-1, 1])];
 
 
@@ -128,7 +127,7 @@ export class Learner {
 
         if (this.dataBlock && !alreadyWatched) {
             let PredictMask = new Array(toPredictResults.shape[0]).fill(true);
-            let usersIdMovies = await this.dataBlock.client.SMEMBERS(userId.toString())
+            let usersIdMovies = await this.dataBlock.client.SMEMBERS(userIdMapped.toString())
             PredictMask = PredictMask.map(function (value, index) {
                 return usersIdMovies.indexOf(index.toString()) == -1;
             })
@@ -137,7 +136,6 @@ export class Learner {
         }
         const { values, indices } = tf.topk(toPredictResults, k);
         return (indices.arraySync() as number[]).map(e => this.modelToItemMap.get(e));
-
     }
 
     /**
@@ -240,6 +238,7 @@ export class Learner {
 
         this.usersNum += 1
         this.dataBlock?.datasetInfo.userToModelMap.set(userId, this.usersNum);
+        console.log(this.usersNum);
         let userEmbeddingWeight = this.model.getWeights()[0];
         userEmbeddingWeight = tf.concat([userEmbeddingWeight, userEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
         this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, [userEmbeddingWeight]);

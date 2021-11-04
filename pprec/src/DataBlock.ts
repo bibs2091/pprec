@@ -94,12 +94,12 @@ export class DataBlock {
         let trainSize = Math.round((1 - validationPercentage) * this.datasetInfo.size)
 
         this.trainingDataset = csvDataset.take(trainSize).batch(this.batchSize);
-        this.trainingDataset = this.trainingDataset.map((x: Idataset) => ({ xs: { user: x.xs.user.reshape([-1, 1]), item: x.xs.item.reshape([-1, 1]) }, ys: x.ys }))
+        this.trainingDataset = this.trainingDataset.map((x: Idataset) => ({ xs: { user: x.xs.user.reshape([-1, 1]), item: x.xs.item.reshape([-1, 1]) }, ys: { rating: x.ys.rating.reshape([-1, 1]) } }))
 
         if (validationPercentage > 0) {
             this.validationDataset = csvDataset.skip(trainSize)
                 .batch(this.batchSize);
-            this.validationDataset = this.validationDataset.map((x: Idataset) => ({ xs: { user: x.xs.user.reshape([-1, 1]), item: x.xs.item.reshape([-1, 1]) }, ys: x.ys }))
+            this.validationDataset = this.validationDataset.map((x: Idataset) => ({ xs: { user: x.xs.user.reshape([-1, 1]), item: x.xs.item.reshape([-1, 1]) }, ys: { rating: x.ys.rating.reshape([-1, 1]) } }))
         }
         return this;
     }

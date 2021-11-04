@@ -39,7 +39,7 @@ export class Learner {
             if (options.lossFunc == null) this.lossFunc = "meanSquaredError";
             else this.lossFunc = options.lossFunc;
 
-            if (options.embeddingOutputSize == null) this.embeddingOutputSize = 25;
+            if (options.embeddingOutputSize == null) this.embeddingOutputSize = 3;
             else this.embeddingOutputSize = options.embeddingOutputSize;
 
             if (options.l2Labmda == null) this.l2Labmda = 0;
@@ -321,9 +321,6 @@ export class Learner {
     viewed(userId: any, itemId: any){
         let userIdMapped = (this.dataBlock?.datasetInfo.userToModelMap.get(`${userId}`) as number);
         let itemIdMapped = (this.dataBlock?.datasetInfo.itemToModelMap.get(`${itemId}`) as number);
-        console.log(userIdMapped);
-        console.log(itemIdMapped);
-        
         this.dataBlock?.client.SADD(userIdMapped.toString(), itemIdMapped.toString());
     }
 

@@ -72,6 +72,6 @@ export class MatrixFactorization {
             this.sigmoidLayer = new SigmoidRange({ high: ratingRange[1], low: ratingRange[0], name: "rating" }).apply(this.dotLayer)
             this.model = tf.model({ inputs: [this.userInputLayer, this.itemInputLayer], outputs: this.sigmoidLayer });
         }
-        this.model.summary()
+        // this.model.summary()
     }
 }

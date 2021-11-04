@@ -204,7 +204,6 @@ export class DataBlock {
         save the datablock in a path (training + validation)
     */
     async save(outputFile: string): Promise<void> {
-        console.time("dbsave");
         const writeStream = fs.createWriteStream(outputFile);
         const stream = csv.format({ headers: ['user', 'item', 'rating'] });
         await this.trainingDataset.forEachAsync(

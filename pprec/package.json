@@ -1,7 +1,7 @@
 {
   "name": "pprec",
-  "version": "0.0.81",
-  "description": "a recommendation system engine for web applications with the ability to preserve privacy",
+  "version": "0.0.9",
+  "description": "a recommender engine node-js package for general use and easy to integrate",
   "types": "dir",
   "main": "dir/main.js",
   "scripts": {
@@ -15,7 +15,6 @@
   "license": "ISC",
   "dependencies": {
     "@tensorflow/tfjs-node": "^3.10.0",
-    "@types/redis": "^2.8.32",
     "fast-csv": "^4.3.6",
     "node-pre-gyp": "^0.17.0",
     "redis": "^4.0.0-rc.3"
@@ -32,6 +31,14 @@
     "url": "git+https://github.com/bibs2091/pprec.git"
   },
   "keywords": [
+    "recommender system",
+    "engine",
+    "recommendation",
+    "matrix factorization",
+    "machine learning",
+    "deep learning",
+    "tfjs",
+    "tensorflow.js",
     "privacy",
     "preserving",
     "ai"

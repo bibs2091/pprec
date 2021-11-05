@@ -2,25 +2,129 @@
 <a href="#pprec" id="pprec" style="color: inherit; text-decoration: none;">
   <h1>pprec</h1>
 </a>
-<p>PPREC is node-js library made for web applications to recommend items to users. The library offer a higher level of abstraction for developers who are not comfortable with concepts like tensors, layers, optimizersand loss functions, and want to add a recommender in few lines of code.</p>
-<p>To run the project you only need to install the package in your project:</p>
+<p>PPREC is a node-js library made for web applications to help them integrate a recommendation systems easily. The library offers a higher level of abstraction for developers who are not comfortable with concepts like tensors, layers, optimizers and loss functions, and want to add a recommender in few lines of code.</p>
+<p>To run the project you need to have redis installed then start it:</p>
+<pre><code><span class="hl-0">redis</span><span class="hl-1">-</span><span class="hl-0">server</span>
+</code></pre>
+<p>and install the package in your project:</p>
 <pre><code><span class="hl-0">npm install pprec</span>
 </code></pre>
+
+<a href="#getting-started" id="getting-started" style="color: inherit; text-decoration: none;">
+  <h1>Getting started</h1>
+</a>
+<p>Here is a basic usage for pprec, just follow the steps:</p>
+<ol>
+<li>Import pprec<pre><code><span class="hl-1">import</span><span class="hl-0"> { dataBlock</span><span class="hl-2">,</span><span class="hl-0"> learner } </span><span class="hl-1">from</span><span class="hl-0"> </span><span class="hl-3">&#39;pprec&#39;</span><span class="hl-0">;</span>
+</code></pre>
+</li>
+<li>Do you have exiting dataset of past ratings of your service users?</li>
+</ol>
+<ul>
+<li><p><strong>Yes</strong>: pprec will make use of your data to make better recommendations: </p>
+<ul>
+<li>First, <a href="#Load-data">Load your data to pprec</a>.</li>
+<li>Next, <a href="#Creating-a-Learner">Bind your data with the recommendations generator</a> (we call it <strong>learner</strong> because it learns from the data).</li>
+<li>Finay, let the learner take a look at your data and <a href="#Optimize-the-Learner">learn from it !</a></li>
+</ul>
+</li>
+<li><p><strong>No?</strong> no problem, do this:</p>
+<pre><code><span class="hl-1">const</span><span class="hl-0"> </span><span class="hl-4">myLearner</span><span class="hl-0"> </span><span class="hl-1">=</span><span class="hl-0"> </span><span class="hl-5">learner</span><span class="hl-0">({ learningRate</span><span class="hl-1">:</span><span class="hl-0"> </span><span class="hl-6">1e-3</span><span class="hl-0"> });</span>
+</code></pre>
+</li>
+</ul>
+<ol start="3">
+<li>If your website have new users or items you can tell pprec about them <a href="##Adding-new-user/item">like this</a>.</li>
+<li>if a user rated an item, you should also tell pprec so it can adjust its recommendations on it <a href="#Adding-a-rating">like this</a>.</li>
+<li>Generate <strong>k</strong> recommendations for a user:<pre><code><span class="hl-7">// recommend 7 items for the user with the ID = &quot;MohamedNaas001&quot;</span><br/><span class="hl-4">myLearner</span><span class="hl-5">.recommendItems</span><span class="hl-0">(</span><span class="hl-3">&quot;MohamedNaas001&quot;</span><span class="hl-2">,</span><span class="hl-0"> </span><span class="hl-6">7</span><span class="hl-0">)</span>
+</code></pre>
+</li>
+</ol>
 
 <a href="#usage" id="usage" style="color: inherit; text-decoration: none;">
   <h1>Usage</h1>
 </a>
-<pre><code><span class="hl-1">import</span><span class="hl-0"> { dataBlock</span><span class="hl-2">,</span><span class="hl-0"> learner } </span><span class="hl-1">from</span><span class="hl-0"> </span><span class="hl-3">&#39;pprec&#39;</span><span class="hl-0">;</span><br/><br/><span class="hl-1">async</span><span class="hl-0"> </span><span class="hl-1">function</span><span class="hl-0"> </span><span class="hl-4">main</span><span class="hl-0">() {</span><br/><span class="hl-0">    </span><span class="hl-1">const</span><span class="hl-0"> </span><span class="hl-5">IMDB</span><span class="hl-0"> </span><span class="hl-1">=</span><span class="hl-0"> </span><span class="hl-1">await</span><span class="hl-0"> </span><span class="hl-4">dataBlock</span><span class="hl-0">()</span><span class="hl-4">.fromCsv</span><span class="hl-0">(</span><span class="hl-3">&quot;./examples/data.csv&quot;</span><span class="hl-2">,</span><span class="hl-0"> {</span><br/><span class="hl-0">        userColumn</span><span class="hl-1">:</span><span class="hl-0"> </span><span class="hl-3">&#39;user&#39;</span><span class="hl-2">,</span><span class="hl-0"> itemColumn</span><span class="hl-1">:</span><span class="hl-0"> </span><span class="hl-3">&#39;movie&#39;</span><span class="hl-2">,</span><span class="hl-0"> ratingColumn</span><span class="hl-1">:</span><span class="hl-0"> </span><span class="hl-3">&#39;rating&#39;</span><span class="hl-2">,</span><span class="hl-0">batchSize</span><span class="hl-1">:</span><span class="hl-0"> </span><span class="hl-6">64</span><span class="hl-2">,</span><span class="hl-0"> ratingRange</span><span class="hl-1">:</span><span class="hl-0"> [</span><span class="hl-6">1</span><span class="hl-2">,</span><span class="hl-0"> </span><span class="hl-6">5</span><span class="hl-0">]});</span><br/><br/><span class="hl-0">    </span><span class="hl-1">const</span><span class="hl-0"> </span><span class="hl-5">myLearner</span><span class="hl-0"> </span><span class="hl-1">=</span><span class="hl-0"> </span><span class="hl-4">learner</span><span class="hl-0">(</span><span class="hl-5">IMDB</span><span class="hl-2">,</span><span class="hl-0"> { learningRate</span><span class="hl-1">:</span><span class="hl-0"> </span><span class="hl-6">1e-3</span><span class="hl-0"> });</span><br/><br/><span class="hl-0">    </span><span class="hl-1">await</span><span class="hl-0"> </span><span class="hl-5">myLearner</span><span class="hl-4">.fit</span><span class="hl-0">(</span><span class="hl-6">3</span><span class="hl-0">);</span><br/><br/><span class="hl-0">    </span><span class="hl-7">//add a new rating in the dataset user id = 5, item id = 10 and with a rating = 2.</span><br/><span class="hl-0">    </span><span class="hl-5">myLearner</span><span class="hl-4">.addRating</span><span class="hl-0">(</span><span class="hl-6">5</span><span class="hl-2">,</span><span class="hl-0"> </span><span class="hl-6">10</span><span class="hl-2">,</span><span class="hl-0"> </span><span class="hl-6">2</span><span class="hl-0">) </span><br/><br/><br/><span class="hl-0">    </span><span class="hl-7">// recommend 7 items for the user with ID = 10 </span><br/><span class="hl-0">    </span><span class="hl-5">console</span><span class="hl-4">.log</span><span class="hl-0">(</span><span class="hl-5">myLearner</span><span class="hl-4">.recommendItems</span><span class="hl-0">(</span><span class="hl-6">10</span><span class="hl-2">,</span><span class="hl-0"> </span><span class="hl-6">7</span><span class="hl-0">)); </span><br/><br/><span class="hl-0">    </span><span class="hl-7">//get the similar 10 users to user with ID = 10</span><br/><span class="hl-0">    </span><span class="hl-5">console</span><span class="hl-4">.log</span><span class="hl-0">(</span><span class="hl-5">myLearner</span><span class="hl-4">.mostSimilarUsers</span><span class="hl-0">(</span><span class="hl-6">10</span><span class="hl-0">)); </span><br/><br/><span class="hl-0">    </span><span class="hl-7">//get the similar 10 users to user with ID = 313 (titanic)</span><br/><span class="hl-0">    </span><span class="hl-5">console</span><span class="hl-4">.log</span><span class="hl-0">(</span><span class="hl-5">myLearner</span><span class="hl-4">.mostSimilarItems</span><span class="hl-0">(</span><span class="hl-6">313</span><span class="hl-0">));</span><br/><span class="hl-0">    </span><br/><span class="hl-0">    </span><span class="hl-5">myLearner</span><span class="hl-4">.save</span><span class="hl-0">(</span><span class="hl-3">&quot;myModel&quot;</span><span class="hl-0">); </span><span class="hl-7">// saving the model</span><br/><span class="hl-0">}</span><br/><br/><span class="hl-4">main</span><span class="hl-0">()</span>
+
+<a href="#load-data" id="load-data" style="color: inherit; text-decoration: none;">
+  <h2>Load data</h2>
+</a>
+<p>You can either load data in pprec from a csv file or existing tensors:</p>
+<ul>
+<li>CSV file: Specify the columns names that contains the information about the users, items, and ratings. <pre><code><span class="hl-1">const</span><span class="hl-0"> </span><span class="hl-4">data</span><span class="hl-0"> </span><span class="hl-1">=</span><span class="hl-0"> </span><span class="hl-1">await</span><span class="hl-0"> </span><span class="hl-5">dataBlock</span><span class="hl-0">()</span><span class="hl-5">.fromCsv</span><span class="hl-0">(</span><span class="hl-3">&quot;data.csv&quot;</span><span class="hl-2">,</span><span class="hl-0"> {</span><br/><span class="hl-0">      userColumn</span><span class="hl-1">:</span><span class="hl-0"> </span><span class="hl-3">&#39;user&#39;</span><span class="hl-2">,</span><br/><span class="hl-0">      itemColumn</span><span class="hl-1">:</span><span class="hl-0"> </span><span class="hl-3">&#39;movie&#39;</span><span class="hl-2">,</span><span class="hl-0"> </span><br/><span class="hl-0">      ratingColumn</span><span class="hl-1">:</span><span class="hl-0"> </span><span class="hl-3">&#39;rating&#39;</span><span class="hl-2">,</span><br/><span class="hl-0">      batchSize</span><span class="hl-1">:</span><span class="hl-0"> </span><span class="hl-6">64</span><span class="hl-2">,</span><span class="hl-0"> </span><br/><span class="hl-0">      ratingRange</span><span class="hl-1">:</span><span class="hl-0"> [</span><span class="hl-6">0</span><span class="hl-2">,</span><span class="hl-0"> </span><span class="hl-6">5</span><span class="hl-0">]</span><br/><span class="hl-0">      });</span>
 </code></pre>
-<p>The current progress:</p>
+</li>
+<li>Tensor: <pre><code><span class="hl-1">const</span><span class="hl-0"> </span><span class="hl-4">data</span><span class="hl-0"> </span><span class="hl-1">=</span><span class="hl-0"> </span><span class="hl-5">dataBlock</span><span class="hl-0">()</span><span class="hl-5">.fromTensor</span><span class="hl-0">(</span><br/><span class="hl-0">  items </span><span class="hl-1">=</span><span class="hl-0"> </span><span class="hl-4">tf</span><span class="hl-5">.tensor</span><span class="hl-0">([</span><span class="hl-6">10</span><span class="hl-2">,</span><span class="hl-6">7</span><span class="hl-2">,</span><span class="hl-6">3</span><span class="hl-2">,</span><span class="hl-6">10</span><span class="hl-0">]</span><span class="hl-2">,</span><br/><span class="hl-0">  users </span><span class="hl-1">=</span><span class="hl-0"> </span><span class="hl-4">tf</span><span class="hl-5">.tensor</span><span class="hl-0">([</span><span class="hl-6">15</span><span class="hl-2">,</span><span class="hl-6">30</span><span class="hl-2">,</span><span class="hl-6">1</span><span class="hl-2">,</span><span class="hl-6">500</span><span class="hl-0">]</span><span class="hl-2">,</span><br/><span class="hl-0">  ratings </span><span class="hl-1">=</span><span class="hl-0"> </span><span class="hl-4">tf</span><span class="hl-5">.tensor</span><span class="hl-0">([</span><span class="hl-6">1</span><span class="hl-2">,</span><span class="hl-6">2</span><span class="hl-2">,</span><span class="hl-6">2</span><span class="hl-2">,</span><span class="hl-6">5</span><span class="hl-0">])</span><span class="hl-2">,</span><br/><span class="hl-0">  batchSize </span><span class="hl-1">=</span><span class="hl-0">  </span><span class="hl-6">4</span><span class="hl-2">,</span><br/><span class="hl-0">  ratingRange</span><span class="hl-1">=</span><span class="hl-0"> [</span><span class="hl-6">0</span><span class="hl-2">,</span><span class="hl-0"> </span><span class="hl-6">5</span><span class="hl-0">]);</span>
+</code></pre>
+if you don&#39;t have the data yet to use for training jump to <a href="#Without-DataBlock">Without DataBlock</a>. 
+<a href="#creating-a-learner" id="creating-a-learner" style="color: inherit; text-decoration: none;">
+  <h2>Creating a Learner</h2>
+</a>
+Learner is the responsible for training the recommendation model and infrencing/generating recommendations from it.
+To create a learner:<pre><code><span class="hl-1">const</span><span class="hl-0"> </span><span class="hl-4">myLearner</span><span class="hl-0"> </span><span class="hl-1">=</span><span class="hl-0"> </span><span class="hl-5">learner</span><span class="hl-0">(data</span><span class="hl-2">,</span><span class="hl-0"> { learningRate</span><span class="hl-1">:</span><span class="hl-0"> </span><span class="hl-6">1e-3</span><span class="hl-0"> });</span>
+</code></pre>
+
+<a href="#optimize-the-learner" id="optimize-the-learner" style="color: inherit; text-decoration: none;">
+  <h2>Optimize the Learner</h2>
+</a>
+fit (train) the learner for few epoches:<pre><code><span class="hl-1">await</span><span class="hl-0"> </span><span class="hl-4">myLearner</span><span class="hl-5">.fit</span><span class="hl-0">(</span><span class="hl-6">3</span><span class="hl-0">);</span>
+</code></pre>
+
+<a href="#adding-a-rating" id="adding-a-rating" style="color: inherit; text-decoration: none;">
+  <h2>Adding a rating</h2>
+</a>
+pprec supports online learning so it will allow adding a new rating to the dataset and adjust the learner to it:<pre><code><span class="hl-1">await</span><span class="hl-0"> </span><span class="hl-4">myLearner</span><span class="hl-5">.addRating</span><span class="hl-0">(</span><span class="hl-3">&quot;MohamedNaas001&quot;</span><span class="hl-2">,</span><span class="hl-0"> </span><span class="hl-3">&quot;The office&quot;</span><span class="hl-2">,</span><span class="hl-0"> </span><span class="hl-6">5</span><span class="hl-0">);</span>
+</code></pre>
+You do not need to run  myLearner.fit() again, as it is already embedded in the addRating() method.
+<a href="#adding-new-useritem" id="adding-new-useritem" style="color: inherit; text-decoration: none;">
+  <h2>Adding new user/item</h2>
+</a>
+In case there is a new user or item in your system, you should explicitly inform pprec before trying to add recommendations and generating recommendations to them:
+```
+myLearner.newUser(&quot;UUID25435&quot;) //add a new user with the id UUID25435</li>
+</ul>
+<p>myLearner.newItem(&quot;Squid Games&quot;) //add a new user with the id UUID25435</p>
+<pre><code><span class="hl-0">The </span><span class="hl-1">new</span><span class="hl-0"> user</span><span class="hl-1">/</span><span class="hl-0">item latent </span><span class="hl-5">factors</span><span class="hl-0"> (embeddings) will be the average </span><span class="hl-1">of</span><span class="hl-0"> the existing latent factors for all the existing users</span><span class="hl-1">/</span><span class="hl-0">items. </span><br/><br/><span class="hl-0">##  Generating recommendation</span><br/><span class="hl-0">To generate </span><span class="hl-1">**</span><span class="hl-0">k</span><span class="hl-1">**</span><span class="hl-0"> items recommendations for a user just </span><span class="hl-1">do</span><span class="hl-0"> </span><span class="hl-4">this</span>
+</code></pre>
+<p>console.log(myLearner.recommendItems(&quot;MohamedNaas001&quot;, 7, false)); 
+//recommend 7 items for the user with ID = &quot;MohamedNaas001&quot; </p>
+<pre><code><span class="hl-0">By </span><span class="hl-1">default</span><span class="hl-2">,</span><span class="hl-0"> the recommendation will not be repeated</span><span class="hl-2">,</span><span class="hl-0"> </span><span class="hl-4">this</span><span class="hl-0"> means </span><span class="hl-1">if</span><span class="hl-0"> a user already viewed or rated an item it will be saved </span><span class="hl-1">in</span><span class="hl-0"> </span><span class="hl-1">*</span><span class="hl-0">redis</span><span class="hl-1">*</span><span class="hl-0"> to be eliminated </span><span class="hl-1">in</span><span class="hl-0"> the recommendation </span><span class="hl-4">process</span><span class="hl-0">. Switch </span><span class="hl-1">*</span><span class="hl-0">alreadyWatched</span><span class="hl-1">*</span><span class="hl-0"> to </span><span class="hl-4">true</span><span class="hl-0"> to remove </span><span class="hl-4">this</span><span class="hl-0"> feature.</span><br/><br/><span class="hl-0">To tell pprec that a user viewed an item</span><span class="hl-2">:</span>
+</code></pre>
+<p>myLearner.viewed(&quot;MohamedNaas001&quot;, &quot;Dark&quot;)</p>
+<pre><code><span class="hl-0">viewing an item means that the user viewed the item but it did not rate it.</span><br/><br/><span class="hl-0">## Similar items</span><span class="hl-1">/</span><span class="hl-0">users</span><br/><span class="hl-0">You can get the </span><span class="hl-1">**</span><span class="hl-0">k</span><span class="hl-1">**</span><span class="hl-0"> similar items to an item or users to a user using the cosine similarity between the items</span><span class="hl-1">/</span><span class="hl-0">users latent factors</span><span class="hl-2">:</span>
+</code></pre>
+<p>console.log(myLearner.mostSimilarUsers(&quot;&quot;MohamedNaas001&quot;&quot;));</p>
+<p>console.log(myLearner.mostSimilarItems(&quot;House MD&quot;));</p>
+<pre><code><br/><span class="hl-0">## Saving and Loading Learner</span><br/><span class="hl-0">To save a the trained learner</span>
+</code></pre>
+<p>myLearner.save(&quot;myModel&quot;); </p>
+<pre><code><span class="hl-0">To load a learner</span>
+</code></pre>
+<p>await myLearner.load(&quot;myModel&quot;); </p>
+<pre><code><span class="hl-0">## Saving an existing DataBlock</span><br/><span class="hl-0">To save a datablock </span><span class="hl-1">in</span><span class="hl-0"> csv format</span><span class="hl-2">:</span>
+</code></pre>
+<p>await data.save(&quot;IMDB.csv&quot;)</p>
+<pre><code><span class="hl-0">You can use the </span><span class="hl-4">DataBlock</span><span class="hl-5">.fromCsv</span><span class="hl-0">() method to load the data </span><span class="hl-1">in</span><span class="hl-0"> pprec again.</span><br/><br/><span class="hl-0">## Without DataBlock</span><br/><span class="hl-0">pprec takes into account the </span><span class="hl-1">case</span><span class="hl-0"> when a website does not have any data to build the recommendation on</span><span class="hl-2">,</span><span class="hl-0"> </span><span class="hl-1">in</span><span class="hl-0"> </span><span class="hl-4">this</span><span class="hl-0"> </span><span class="hl-1">case</span><span class="hl-0"> you can initilize the Learner directly then add users</span><span class="hl-2">,</span><span class="hl-0"> items</span><span class="hl-2">,</span><span class="hl-0"> and ratings to </span><span class="hl-4">it</span><span class="hl-0">. Example</span>
+</code></pre>
+<p>const myLearner = learner({ learningRate: 1e-3 });</p>
+<p>myLearner.newUser(&quot;UUID25435&quot;);</p>
+<p>myLearner.newItem(&quot;Squid Games&quot;);</p>
+<p>await myLearner.addRating(&quot;UUID25435&quot;, &quot;Squid Games&quot;, 4);</p>
+<p>```</p>
+
+<a href="#the-current-progress" id="the-current-progress" style="color: inherit; text-decoration: none;">
+  <h1>The current progress:</h1>
+</a>
 <ul>
 <li><input checked="" disabled="" type="checkbox"> Learner </li>
 <li><input checked="" disabled="" type="checkbox"> DataBlock</li>
 <li><input checked="" disabled="" type="checkbox"> Local DP</li>
-<li><input disabled="" type="checkbox"> Documentation</li>
-<li><input disabled="" type="checkbox"> Contribution guide</li>
+<li><input checked="" disabled="" type="checkbox"> Documentation: <a href="https://pprec.netlify.app/">https://pprec.netlify.app/</a></li>
+<li><input checked="" disabled="" type="checkbox"> Contribution guide</li>
 <li><input disabled="" type="checkbox"> Output DP</li>
 <li><input disabled="" type="checkbox"> Gradient perturbation</li>
-<li><input disabled="" type="checkbox"> Other algorthims than Matrix factorization</li>
+<li><input disabled="" type="checkbox"> Other algorthims than Matrix factorization
+<br>&nbsp;
+<br>&nbsp;
+Wanna contribute? check <a href="../CONTRIBUTING.md">the contribution guide</a></li>
 </ul>
 </div></div><div class="col-4 col-menu menu-sticky-wrap menu-highlight"><nav class="tsd-navigation primary"><ul><li class="current"><a href="modules.html">Modules</a></li><li class=" tsd-kind-module"><a href="modules/DataBlock.html">Data<wbr/>Block</a></li><li class=" tsd-kind-module"><a href="modules/Learner.html">Learner</a></li><li class=" tsd-kind-module"><a href="modules/MatrixFactorization.html">Matrix<wbr/>Factorization</a></li><li class=" tsd-kind-module"><a href="modules/utils.html">utils</a></li></ul></nav></div></div></div><footer class="with-border-bottom"><div class="container"><h2>Legend</h2><div class="tsd-legend-group"><ul class="tsd-legend"><li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li></ul><ul class="tsd-legend"><li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li></ul></div><h2>Settings</h2><p>Theme <select id="theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></p></div></footer><div class="container tsd-generator"><p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></div><div class="overlay"></div><script src="assets/main.js"></script></body></html>

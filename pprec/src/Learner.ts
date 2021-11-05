@@ -228,7 +228,7 @@ export class Learner {
 
         if (train) {
             await this.model.fitDataset(toAdd, {
-                epochs: 3,
+                epochs: 1,
                 verbose: 0
             })
         }
@@ -323,12 +323,16 @@ export class Learner {
        To save the architecture and the weights and id Maps of the model in a given path
     */
     save(path: string): Promise<io.SaveResult> {
+        
+        // in case the folder does not already exist: create it
+        if (!fs.existsSync(path)){
+            fs.mkdirSync(path);
+        }
         let userMap = JSON.stringify(Array.from((this.dataBlock?.datasetInfo.userToModelMap as Map<any, number>).entries()))
-        fs.writeFileSync(`${path}_userToModelMap.txt`, userMap)
+        fs.writeFileSync(`${path}/userToModelMap.txt`, userMap);
 
         let itemMap = JSON.stringify(Array.from((this.dataBlock?.datasetInfo.itemToModelMap as Map<any, number>).entries()))
-        fs.writeFileSync(`${path}_itemToModelMap.txt`, itemMap)
-
+        fs.writeFileSync(`${path}/itemToModelMap.txt`, itemMap);
 
         return this.model.save('file://' + path);
     }
@@ -348,8 +352,8 @@ export class Learner {
         this.setOptimizer(this.optimizerName);
 
         // load userToModelMap and itemToModelMap
-        let loadedUserMap: string = await fs.readFileSync(`${path}_userToModelMap.txt`, 'utf8');
-        let loadedItemMap: string = await fs.readFileSync(`${path}_itemToModelMap.txt`, 'utf8');
+        let loadedUserMap: string = await fs.readFileSync(`${path}/userToModelMap.txt`, 'utf8');
+        let loadedItemMap: string = await fs.readFileSync(`${path}/itemToModelMap.txt`, 'utf8');
 
         if (this.dataBlock == null) {
             this.dataBlock = new DataBlock()

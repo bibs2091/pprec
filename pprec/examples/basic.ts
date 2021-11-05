@@ -13,7 +13,7 @@ async function main() {
 
     const myLearner = learner(IMDB, { learningRate: 1e-3 }); //Creating learner from the IMDB datablock    
 
-    await myLearner.fit(3); //train the mode for one epoch
+    // await myLearner.fit(3); //train the mode for one epoch
 
     console.log(myLearner.recommendItems(10, 7)); // recommend 7 items for the user with ID = 10 
     await myLearner.addRating(5, 10, 2) //add a new rating in the dataset
@@ -21,6 +21,8 @@ async function main() {
     console.log(myLearner.mostSimilarUsers(10)); //get the similar 10 users to user with ID = 10
     console.log(myLearner.mostSimilarItems(313)); //get the similar 10 users to user with ID = 313 (titanic)
     await myLearner.save("myModel"); // saving the model
+    await myLearner.load("myModel"); // saving the model
+
 }
 
 main()

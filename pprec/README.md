@@ -1,5 +1,5 @@
 # pprec
-PPREC is node-js library made for web applications to help them integrate a recommendation systems easily. The library offer a higher level of abstraction for developers who are not comfortable with concepts like tensors, layers, optimizers and loss functions, and want to add a recommender in few lines of code.
+PPREC is a node-js library made for web applications to help them integrate a recommendation systems easily. The library offers a higher level of abstraction for developers who are not comfortable with concepts like tensors, layers, optimizers and loss functions, and want to add a recommender in few lines of code.
 
 To run the project you need to have redis installed then start it:
 ```
@@ -9,12 +9,32 @@ and install the package in your project:
 ```
 npm install pprec
 ```
+# Getting started
+Here is a basic usage for pprec, just follow the steps:
+1. Import pprec
+```
+import { dataBlock, learner } from 'pprec';
+```
+2. Do you have exiting dataset of past ratings of your service users?
+* **Yes**: pprec will make use of your data to make better recommendations: 
+    * First, [Load your data to pprec](#Load-data).
+    * Next, [Bind your data with the recommendations generator](#Creating-a-Learner) (we call it **learner** because it learns from the data).
+    * Finay, let the learner take a look at your data and [learn from it !](#Optimize-the-Learner) 
+
+* **No?** no problem, do this:
+```
+const myLearner = learner({ learningRate: 1e-3 });
+```
+3. If your website have new users or items you can tell pprec about them [like this](##Adding-new-user/item).
+4. if a user rated an item, you should also tell pprec so it can adjust its recommendations on it [like this](#Adding-a-rating).
+5. Generate **k** recommendations for a user:
+```
+// recommend 7 items for the user with the ID = "MohamedNaas001"
+myLearner.recommendItems("MohamedNaas001", 7)
+```
+
 # Usage
-
 ## Load data
-if you don't have the data yet to use for training jump to [Without DataBlock](#Without-DataBlock)
- . 
-
 You can either load data in pprec from a csv file or existing tensors:
 * CSV file: Specify the columns names that contains the information about the users, items, and ratings. 
 ```
@@ -35,14 +55,15 @@ const data = dataBlock().fromTensor(
     batchSize =  4,
     ratingRange= [0, 5]);
 ```
-
+if you don't have the data yet to use for training jump to [Without DataBlock](#Without-DataBlock). 
 ## Creating a Learner
 Learner is the responsible for training the recommendation model and infrencing/generating recommendations from it.
 To create a learner:
 ```
 const myLearner = learner(data, { learningRate: 1e-3 });
 ``` 
-then fit it for few epoches:
+## Optimize the Learner
+fit (train) the learner for few epoches:
 ```
 await myLearner.fit(3);
 ``` 
@@ -64,10 +85,10 @@ The new user/item latent factors (embeddings) will be the average of the existin
 ##  Generating recommendation
 To generate **k** items recommendations for a user just do this
 ```
-console.log(myLearner.recommendItems("MohamedNaas001", 7)); 
+console.log(myLearner.recommendItems("MohamedNaas001", 7, false)); 
 //recommend 7 items for the user with ID = "MohamedNaas001" 
 ```
-By default, the recommendation will not be repeated, this means if a user already viewed or rated an item it will be saved in *redis* to be eliminated in the recommendation process.
+By default, the recommendation will not be repeated, this means if a user already viewed or rated an item it will be saved in *redis* to be eliminated in the recommendation process. Switch *alreadyWatched* to true to remove this feature.
 
 To tell pprec that a user viewed an item:
 ```
@@ -118,10 +139,12 @@ await myLearner.addRating("UUID25435", "Squid Games", 4);
 - [x] DataBlock
 - [x] Local DP
 - [x] Documentation: https://pprec.netlify.app/
-- [ ] Contribution guide
+- [x] Contribution guide
 - [ ] Output DP
 - [ ] Gradient perturbation
 - [ ] Other algorthims than Matrix factorization
-
-
-
+\
+&nbsp;
+\
+&nbsp;
+Wanna contribute? check [the contribution guide](../CONTRIBUTING.md)

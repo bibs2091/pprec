@@ -9,7 +9,7 @@ and install the package in your project:
 ```
 npm install pprec
 ```
-# Basic Usage
+# Getting started
 Here is a basic usage for pprec, just follow the steps:
 1. Import pprec
 ```
@@ -139,10 +139,12 @@ await myLearner.addRating("UUID25435", "Squid Games", 4);
 - [x] DataBlock
 - [x] Local DP
 - [x] Documentation: https://pprec.netlify.app/
-- [ ] Contribution guide
+- [x] Contribution guide
 - [ ] Output DP
 - [ ] Gradient perturbation
 - [ ] Other algorthims than Matrix factorization
-
-
-
+\
+&nbsp;
+\
+&nbsp;
+Wanna contribute? check [the contribution guide](./CONTRIBUTING.md)

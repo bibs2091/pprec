@@ -47,6 +47,7 @@ export class DataBlock {
 
 
     constructor() {
+        this.datasetInfo = { size: 0, usersNum: 0, itemsNum: 0, userToModelMap: new Map(), itemToModelMap: new Map() }
         this.redisConfig().then(e => console.log("connected"))
     }
 
@@ -109,7 +110,6 @@ export class DataBlock {
         input the item, users, and ratings tensors
     */
     fromTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number = 0, batchSize: number = 32, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null): DataBlock {
-        this.datasetInfo = { size: 0, usersNum: 0, itemsNum: 0, userToModelMap: new Map(), itemToModelMap: new Map() }
         this.datasetInfo.size = ratings.flatten().shape[0];
 
         // shuffle the dataset

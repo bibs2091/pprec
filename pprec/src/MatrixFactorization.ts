@@ -15,7 +15,6 @@ export class MatrixFactorization {
         this.userInputLayer = tf.input({ shape: [1], dtype: "int32", name: "user" });
         this.itemInputLayer = tf.input({ shape: [1], dtype: "int32", name: "item" });
 
-
         if (userEmbeddingWeights == null) {
             this.userEmbeddingLayer = tf.layers.embedding({
                 inputDim: usersNum + 1,
@@ -38,7 +37,7 @@ export class MatrixFactorization {
 
         if (itemEmbeddingWeights == null) {
             this.itemEmbeddingLayer = tf.layers.embedding({
-                inputDim: itemsNum,
+                inputDim: itemsNum + 1,
                 outputDim: embeddingOutputSize,
                 inputLength: 1,
                 name: "itemEmbeddingLayer",
@@ -47,7 +46,7 @@ export class MatrixFactorization {
         }
         else {
             this.itemEmbeddingLayer = tf.layers.embedding({
-                inputDim: itemsNum,
+                inputDim: itemsNum + 1,
                 outputDim: embeddingOutputSize,
                 inputLength: 1,
                 name: "itemEmbeddingLayer",

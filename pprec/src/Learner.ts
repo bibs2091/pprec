@@ -6,6 +6,7 @@ import { ValueError, NonExistance } from './errors'
 import { io, range } from '@tensorflow/tfjs-core';
 import * as fs from 'fs';
 
+
 interface optionsLearner {
     learningRate: number; embeddingOutputSize?: number; lossFunc?: string; optimizerName?: string; l2Labmda?: number
 }
@@ -14,8 +15,8 @@ interface optionsLearner {
     Learner is an api which allows you to create, edit and train your model in few lines.
 */
 export class Learner {
-    itemsNum?: number;
-    usersNum?: number;
+    itemsNum: number;
+    usersNum: number;
     learningRate: number;
     lossFunc: string;
     embeddingOutputSize?: number;
@@ -59,6 +60,26 @@ export class Learner {
         else {
             this.lossFunc = "meanSquaredError";
             this.optimizerName = "adam";
+            this.dataBlock = new DataBlock()
+            this.itemsNum = this.dataBlock.datasetInfo.itemsNum;
+            this.usersNum = this.dataBlock.datasetInfo.usersNum;
+            if (options?.lossFunc == null) this.lossFunc = "meanSquaredError";
+            else this.lossFunc = options.lossFunc;
+
+            if (options?.embeddingOutputSize == null) this.embeddingOutputSize = 3;
+            else this.embeddingOutputSize = options?.embeddingOutputSize;
+
+            if (options?.l2Labmda == null) this.l2Labmda = 0;
+            else this.l2Labmda = options?.l2Labmda;
+            this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, this.l2Labmda, this.ratingRange);
+            this.model = this.MFC.model;
+
+            this.dataBlock.datasetInfo.userToModelMap.set('0',0)
+            this.dataBlock.datasetInfo.itemToModelMap.set('0',0)
+            this.modelToUserMap = new Map();
+            this.modelToItemMap = new Map();
+            this.dataBlock.datasetInfo.userToModelMap.forEach((value, key) => this.modelToUserMap.set(value, key));
+            this.dataBlock.datasetInfo.itemToModelMap.forEach((value, key) => this.modelToItemMap.set(value, key));
         }
 
     }
@@ -156,7 +177,6 @@ export class Learner {
                 },
                 ys: { rating: tf.tensor1d([Number(rating)]) }
             }])
-
         this.dataBlock.client.SADD(userIdMapped.toString(), itemIdMapped.toString());
         if (this.dataBlock.datasetInfo.size == 0) {
             this.dataBlock.trainingDataset = toAdd
@@ -220,31 +240,18 @@ export class Learner {
         The embedding is generated based on the mean of the other users latent factors.
     */
     newUser(userId: any) {
-        if (this.usersNum == null)
-            throw new NonExistance(
-                `usersNum does not exist, this is maybe because you did not feed Learner a DataBlock`
-            );
-
-        if (this.itemsNum == null)
-            throw new NonExistance(
-                `itemsNum does not exist, this is maybe because you did not feed Learner a DataBlock`
-            );
 
         if (this.embeddingOutputSize == null)
             throw new NonExistance(`embeddingOutputSize does not exist`);
 
-        if (this.model == null)
-            throw new NonExistance(`No model to train, please provoid a proper model`);
-
         this.usersNum += 1
-        this.dataBlock?.datasetInfo.userToModelMap.set(userId, this.usersNum);
-        console.log(this.usersNum);
+        this.dataBlock?.datasetInfo.userToModelMap.set(`${userId}`, this.usersNum);
+        this.modelToUserMap.set(this.usersNum, `${userId}`)
         let userEmbeddingWeight = this.model.getWeights()[0];
         userEmbeddingWeight = tf.concat([userEmbeddingWeight, userEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
         this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, [userEmbeddingWeight]);
         this.model = this.MFC.model;
         this.setOptimizer(this.optimizerName);
-        return this.usersNum //the new user ID
     }
 
     /**
@@ -252,30 +259,18 @@ export class Learner {
         The embedding is generated based on the mean of the other item latent factors.
     */
     newItem(itemId: any) {
-        if (this.usersNum == null)
-            throw new NonExistance(
-                `usersNum does not exist, this is maybe because you did not feed Learner a DataBlock`
-            );
-
-        if (this.itemsNum == null)
-            throw new NonExistance(
-                `itemsNum does not exist, this is maybe because you did not feed Learner a DataBlock`
-            );
 
         if (this.embeddingOutputSize == null)
             throw new NonExistance(`embeddingOutputSize does not exist`);
 
-        if (this.model == null)
-            throw new NonExistance(`No model to train, please provoid a proper model`);
-
         this.itemsNum += 1;
-        this.dataBlock?.datasetInfo.itemToModelMap.set(itemId, this.itemsNum);
+        this.dataBlock?.datasetInfo.itemToModelMap.set(`${itemId}`, this.itemsNum);
+        this.modelToItemMap.set(this.itemsNum, `${itemId}`)
         let itemEmbeddingWeight = this.model.getWeights()[1];
         itemEmbeddingWeight = tf.concat([itemEmbeddingWeight, itemEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
         this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, undefined, [itemEmbeddingWeight]);
         this.model = this.MFC.model;
         this.setOptimizer(this.optimizerName);
-        return this.itemsNum //the new user ID
     }
 
 
@@ -337,6 +332,7 @@ export class Learner {
 
         return this.model.save('file://' + path);
     }
+
 
     /**
     * To load a pre-saved model

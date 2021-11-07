@@ -8,7 +8,9 @@ import * as fs from 'fs';
 
 
 interface optionsLearner {
-    learningRate: number; embeddingOutputSize?: number; lossFunc?: string; optimizerName?: string; l2Labmda?: number
+    learningRate: number; embeddingOutputSize?: number;
+    lossFunc?: string; optimizerName?: string;
+    l2Labmda?: number; redisUrl?: string
 }
 
 /**
@@ -60,7 +62,7 @@ export class Learner {
         else {
             this.lossFunc = "meanSquaredError";
             this.optimizerName = "adam";
-            this.dataBlock = new DataBlock()
+            this.dataBlock = new DataBlock(options?.redisUrl)
             this.itemsNum = this.dataBlock.datasetInfo.itemsNum;
             this.usersNum = this.dataBlock.datasetInfo.usersNum;
             if (options?.lossFunc == null) this.lossFunc = "meanSquaredError";
@@ -74,8 +76,8 @@ export class Learner {
             this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, this.l2Labmda, this.ratingRange);
             this.model = this.MFC.model;
 
-            this.dataBlock.datasetInfo.userToModelMap.set('0',0)
-            this.dataBlock.datasetInfo.itemToModelMap.set('0',0)
+            this.dataBlock.datasetInfo.userToModelMap.set('0', 0)
+            this.dataBlock.datasetInfo.itemToModelMap.set('0', 0)
             this.modelToUserMap = new Map();
             this.modelToItemMap = new Map();
             this.dataBlock.datasetInfo.userToModelMap.forEach((value, key) => this.modelToUserMap.set(value, key));
@@ -313,7 +315,7 @@ export class Learner {
     /**
       Use this when a user view an item but did not rate it, allowing pprec to not re-recommend this item
     */
-    viewed(userId: any, itemId: any){
+    viewed(userId: any, itemId: any) {
         let userIdMapped = (this.dataBlock?.datasetInfo.userToModelMap.get(`${userId}`) as number);
         let itemIdMapped = (this.dataBlock?.datasetInfo.itemToModelMap.get(`${itemId}`) as number);
         this.dataBlock?.client.SADD(userIdMapped.toString(), itemIdMapped.toString());
@@ -323,9 +325,9 @@ export class Learner {
        To save the architecture and the weights and id Maps of the model in a given path
     */
     save(path: string): Promise<io.SaveResult> {
-        
+
         // in case the folder does not already exist: create it
-        if (!fs.existsSync(path)){
+        if (!fs.existsSync(path)) {
             fs.mkdirSync(path);
         }
         let userMap = JSON.stringify(Array.from((this.dataBlock?.datasetInfo.userToModelMap as Map<any, number>).entries()))

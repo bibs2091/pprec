@@ -30,7 +30,7 @@ interface Idataset2 {
 interface optionsDataBlock {
     userColumn: string; itemColumn: string, ratingColumn: string; batchSize?: number;
     ratingRange?: number[]; validationPercentage?: number; delimiter?: string;
-    seed?: number;
+    seed?: number; 
 }
 /**
     DataBlock is an api which allows you to generate and manupilate your dataset.
@@ -46,9 +46,9 @@ export class DataBlock {
     ratingRange?: number[];
 
 
-    constructor() {
+    constructor(redisUrl?: string) {
         this.datasetInfo = { size: 0, usersNum: 0, itemsNum: 0, userToModelMap: new Map(), itemToModelMap: new Map() }
-        this.redisConfig().then(e => console.log("connected"))
+        this.redisConfig(redisUrl).then(e => console.log("connected"))
     }
 
     /**
@@ -239,8 +239,13 @@ export class DataBlock {
     }
 
 
-    async redisConfig() {
-        this.client = createClient();
+    async redisConfig(url) {
+        if (url == null)
+            this.client = createClient();
+        else
+            this.client = createClient({
+                url: url
+            });
         this.client.on('error', (err) => console.log('Redis Client Error', err));
         await this.client.connect()
     }

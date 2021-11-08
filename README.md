@@ -46,16 +46,15 @@ const data = await dataBlock().fromCsv("data.csv", {
         ratingRange: [0, 5]
         });
 ```
-* Tensor: 
+* Javascript array: 
 ```
-const data = dataBlock().fromTensor(
-    items = tf.tensor([10,7,3,10],
-    users = tf.tensor([15,30,1,500],
-    ratings = tf.tensor([1,2,2,5]),
-    batchSize =  4,
-    ratingRange= [0, 5]);
+const data = dataBlock().fromArray(
+    items = [10,7,3,10],
+    users = [15,30,1,500],
+    ratings = [1,2,2,5],
+    batchSize =  4 );
 ```
-if you don't have the data yet to use for training jump to [Without DataBlock](#Without-DataBlock). 
+if you don't have any data yet to use for training jump to [Without DataBlock](#Without-DataBlock). 
 ## Creating a Learner
 Learner is the responsible for training the recommendation model and infrencing/generating recommendations from it.
 To create a learner:

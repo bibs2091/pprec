@@ -122,8 +122,13 @@ export class Learner {
         if (this.model == null)
             throw new NonExistance(`No model to train, please provoid a proper model`);
 
+        if (this.dataBlock.validationDataset.size > 0)
+            return this.model.fitDataset(this.dataBlock.trainingDataset, {
+                validationData: this.dataBlock.validationDataset,
+                epochs: epochs,
+            })
+        else 
         return this.model.fitDataset(this.dataBlock.trainingDataset, {
-            validationData: this.dataBlock.validationDataset,
             epochs: epochs,
         })
     }

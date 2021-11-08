@@ -109,14 +109,18 @@ export class DataBlock {
         Create a datablock from a tensors.
         input the item, users, and ratings tensors
     */
-    fromTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number = 0, batchSize: number = 32, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null): DataBlock {
-        this.datasetInfo.size = ratings.flatten().shape[0];
+    async fromArray(items: number[], users: number[], ratings: number[], validationPercentage: number = 0.1, batchSize: number = 1, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null){
+        this.datasetInfo.itemsNum = new Set(items).size;
+        this.datasetInfo.usersNum = new Set(users).size;
+        this.datasetInfo.size = ratings.length;
+        this.batchSize = (batchSize == null) ? 64 : batchSize
 
         // shuffle the dataset
         let randomTen = Array.from(tf.util.createShuffledIndices(this.datasetInfo.size));
-        items = items.reshape([-1, 1]).gather(randomTen);
-        users = users.reshape([-1, 1]).gather(randomTen);
-        ratings = ratings.flatten().gather(randomTen);
+        items = randomTen.map(i => items[i]);
+        users = randomTen.map(i => users[i]);
+        ratings = randomTen.map(i => ratings[i]);
+
 
         //train valid splitting
         if (validationPercentage > 0) {
@@ -124,11 +128,18 @@ export class DataBlock {
         }
         else {
             let psuedoTrainingDataset: tf.TensorContainer[] = []
-            for (let i = 0; i < ratings.shape[0]; i++) {
-                psuedoTrainingDataset.push({ xs: { user: users.slice(i, 1), item: items.slice(i, 1) }, ys: { rating: ratings.slice(i) } })
+            for (let i = 0; i < items.length; i++) {
+                psuedoTrainingDataset.push({ xs: { user: users[i], item: items[i]}, ys: { rating: ratings[i] } })
             }
             this.trainingDataset = tf.data.array(psuedoTrainingDataset)
         }
+
+        this.trainingDataset = this.trainingDataset.batch(this.batchSize);
+        this.validationDataset = this.validationDataset.batch(this.batchSize);
+
+        this.trainingDataset = this.trainingDataset.map((x: Idataset) => ({ xs: { user: x.xs.user.reshape([-1, 1]), item: x.xs.item.reshape([-1, 1]) }, ys: { rating: x.ys.rating.reshape([-1, 1]) } }))
+        this.validationDataset = this.validationDataset.map((x: Idataset) => ({ xs: { user: x.xs.user.reshape([-1, 1]), item: x.xs.item.reshape([-1, 1]) }, ys: { rating: x.ys.rating.reshape([-1, 1]) } }))
+
         return this;
     }
 
@@ -178,23 +189,28 @@ export class DataBlock {
         Split the tensors into training and validation set.
         mainly used in fromTensor method
     */
-    splitTrainValidTensor(items: tf.Tensor, users: tf.Tensor, ratings: tf.Tensor, validationPercentage: number): void {
+    splitTrainValidTensor(items: number[], users: number[], ratings: number[], validationPercentage: number): void {
         let trainSize: number = Math.round((1 - validationPercentage) * this.datasetInfo.size)
-        let validSize: number = Math.abs(trainSize - this.datasetInfo.size)
-        let [trainingItems, validationItems] = tf.split(items, [trainSize, validSize], 0);
-        let [trainingUsers, validationUsers] = tf.split(users, [trainSize, validSize], 0);
-        let [trainingRatings, validationRatings] = tf.split(ratings, [trainSize, validSize], 0);
+        // splitting
+        let trainingItems= items.slice(0,trainSize);
+        let validationItems = items.slice(trainSize);
+
+        let trainingUsers = users.slice(0,trainSize);
+        let validationUsers = users.slice(trainSize);
+
+        let trainingRatings = ratings.slice(0,trainSize)
+        let validationRatings = ratings.slice(trainSize)
 
         let psuedoTrainingDataset: tf.TensorContainer[] = []
-        for (let i = 0; i < trainingRatings.shape[0]; i++) {
-            psuedoTrainingDataset.push({ xs: { user: trainingUsers.slice(i, 1), item: trainingItems.slice(i, 1) }, ys: { rating: trainingRatings.slice(i) } })
+        for (let i = 0; i < trainingRatings.length; i++) {
+            psuedoTrainingDataset.push({ xs: { user: trainingUsers[i], item: trainingItems[i] }, ys: { rating: trainingRatings[i] } })
         }
         this.trainingDataset = tf.data.array((psuedoTrainingDataset))
 
 
         let psuedoValidationDataset: tf.TensorContainer[] = []
-        for (let i = 0; i < validationRatings.shape[0]; i++) {
-            psuedoValidationDataset.push({ xs: { user: validationUsers.slice(i, 1), item: validationItems.slice(i, 1) }, ys: { rating: validationRatings.slice(i) } })
+        for (let i = 0; i < validationRatings.length; i++) {
+            psuedoValidationDataset.push({ xs: { user: validationUsers[i], item: validationItems[i] }, ys: { rating: validationRatings[i] } })
         }
         this.validationDataset = tf.data.array((psuedoValidationDataset))
     }

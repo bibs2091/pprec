@@ -27,10 +27,15 @@ interface Idataset2 {
 }
 
 
-interface optionsDataBlock {
+interface optionsDataBlockCsv {
     userColumn: string; itemColumn: string, ratingColumn: string; batchSize?: number;
     ratingRange?: number[]; validationPercentage?: number; delimiter?: string;
     seed?: number;
+}
+
+interface optionsDataBlockArray {
+    batchSize?: number; ratingRange?: number[]; 
+    validationPercentage?: number; seed?: number;
 }
 /**
     DataBlock is an api which allows you to generate and manupilate your dataset.
@@ -55,7 +60,7 @@ export class DataBlock {
         Create a datablock from a csv file.
         You should define the name of the columns which contain the corresponding data 
     */
-    async fromCsv(path: string, options: optionsDataBlock) {
+    async fromCsv(path: string, options: optionsDataBlockCsv) {
         let myPath = "file://" + path;
 
         options.delimiter = (options.delimiter == null) ? ',' : options?.delimiter;
@@ -109,12 +114,14 @@ export class DataBlock {
         Create a datablock from a tensors.
         input the item, users, and ratings tensors
     */
-    async fromArray(items: number[], users: number[], ratings: number[], validationPercentage: number = 0.1, batchSize: number = 1, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null) {
+    async fromArray(items: number[], users: number[], ratings: number[], options?: optionsDataBlockArray) {
         this.datasetInfo.itemsNum = new Set(items).size;
         this.datasetInfo.usersNum = new Set(users).size;
         this.datasetInfo.size = ratings.length;
-        this.batchSize = (batchSize == null) ? 64 : batchSize
-
+        this.batchSize = (options?.batchSize == null) ? 64 : options?.batchSize
+        let validationPercentage = options?.validationPercentage ? options?.validationPercentage : 0.1 
+        
+        
         // shuffle the dataset
         let randomTen = Array.from(tf.util.createShuffledIndices(this.datasetInfo.size));
         items = randomTen.map(i => items[i]);

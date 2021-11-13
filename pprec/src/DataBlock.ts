@@ -30,7 +30,7 @@ interface Idataset2 {
 interface optionsDataBlock {
     userColumn: string; itemColumn: string, ratingColumn: string; batchSize?: number;
     ratingRange?: number[]; validationPercentage?: number; delimiter?: string;
-    seed?: number; 
+    seed?: number;
 }
 /**
     DataBlock is an api which allows you to generate and manupilate your dataset.
@@ -109,7 +109,7 @@ export class DataBlock {
         Create a datablock from a tensors.
         input the item, users, and ratings tensors
     */
-    async fromArray(items: number[], users: number[], ratings: number[], validationPercentage: number = 0.1, batchSize: number = 1, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null){
+    async fromArray(items: number[], users: number[], ratings: number[], validationPercentage: number = 0.1, batchSize: number = 1, ratingRange: null | number[] = null, randomSeed: null | number[] = null, options: null | object = null) {
         this.datasetInfo.itemsNum = new Set(items).size;
         this.datasetInfo.usersNum = new Set(users).size;
         this.datasetInfo.size = ratings.length;
@@ -129,7 +129,7 @@ export class DataBlock {
         else {
             let psuedoTrainingDataset: tf.TensorContainer[] = []
             for (let i = 0; i < items.length; i++) {
-                psuedoTrainingDataset.push({ xs: { user: users[i], item: items[i]}, ys: { rating: ratings[i] } })
+                psuedoTrainingDataset.push({ xs: { user: users[i], item: items[i] }, ys: { rating: ratings[i] } })
             }
             this.trainingDataset = tf.data.array(psuedoTrainingDataset)
         }
@@ -168,8 +168,8 @@ export class DataBlock {
                     }
 
                     client.SADD(
-                        csvInfo.userToModelMap.get(data[userColumn]).toString(),
-                        csvInfo.itemToModelMap.get(data[itemColumn]).toString()
+                        csvInfo.userToModelMap.get(`${data[userColumn]}`).toString(),
+                        csvInfo.itemToModelMap.get(`${data[itemColumn]}`).toString()
                     );
 
                 })
@@ -190,20 +190,38 @@ export class DataBlock {
         mainly used in fromTensor method
     */
     splitTrainValidTensor(items: number[], users: number[], ratings: number[], validationPercentage: number): void {
-        let trainSize: number = Math.round((1 - validationPercentage) * this.datasetInfo.size)
+        let trainSize: number = Math.round((1 - validationPercentage) * this.datasetInfo.size);
+        let usersIndex = 0;
+        let itemsIndex = 0;
         // splitting
-        let trainingItems= items.slice(0,trainSize);
+        let trainingItems = items.slice(0, trainSize);
         let validationItems = items.slice(trainSize);
 
-        let trainingUsers = users.slice(0,trainSize);
+        let trainingUsers = users.slice(0, trainSize);
         let validationUsers = users.slice(trainSize);
 
-        let trainingRatings = ratings.slice(0,trainSize)
+        let trainingRatings = ratings.slice(0, trainSize)
         let validationRatings = ratings.slice(trainSize)
 
         let psuedoTrainingDataset: tf.TensorContainer[] = []
         for (let i = 0; i < trainingRatings.length; i++) {
             psuedoTrainingDataset.push({ xs: { user: trainingUsers[i], item: trainingItems[i] }, ys: { rating: trainingRatings[i] } })
+            
+            if (!this.datasetInfo.userToModelMap.has(`${trainingUsers[i]}`)) {
+                this.datasetInfo.userToModelMap.set(`${trainingUsers[i]}`, usersIndex);
+                usersIndex += 1;
+            }
+
+            if (!this.datasetInfo.itemToModelMap.has(`${trainingItems[i]}`)) {
+                this.datasetInfo.itemToModelMap.set(`${trainingItems[i]}`, itemsIndex);
+                itemsIndex += 1;
+            }
+
+            this.client.SADD(
+                (this.datasetInfo.userToModelMap.get(`${trainingUsers[i]}`) as number).toString(),
+                (this.datasetInfo.itemToModelMap.get(`${trainingItems[i]}`) as number).toString()
+            );
+
         }
         this.trainingDataset = tf.data.array((psuedoTrainingDataset))
 
@@ -211,7 +229,23 @@ export class DataBlock {
         let psuedoValidationDataset: tf.TensorContainer[] = []
         for (let i = 0; i < validationRatings.length; i++) {
             psuedoValidationDataset.push({ xs: { user: validationUsers[i], item: validationItems[i] }, ys: { rating: validationRatings[i] } })
+            
+            if (!this.datasetInfo.userToModelMap.has(`${validationUsers[i]}`)) {
+                this.datasetInfo.userToModelMap.set(`${validationUsers[i]}`, usersIndex);
+                usersIndex += 1;
+            }
+
+            if (!this.datasetInfo.itemToModelMap.has(`${validationItems[i]}`)) {
+                this.datasetInfo.itemToModelMap.set(`${validationItems[i]}`, itemsIndex);
+                itemsIndex += 1;
+            }
+
+            this.client.SADD(
+                (this.datasetInfo.userToModelMap.get(`${validationUsers[i]}`) as number).toString(),
+                (this.datasetInfo.itemToModelMap.get(`${validationItems[i]}`) as number).toString()
+            );
         }
+
         this.validationDataset = tf.data.array((psuedoValidationDataset))
     }
 

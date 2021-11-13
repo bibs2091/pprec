@@ -27,7 +27,7 @@ export class Learner {
     MFC?: MatrixFactorization;
     ratingRange?: number[];
     optimizerName: string;
-    dataBlock?: DataBlock;
+    dataBlock: DataBlock;
     l2Labmda?: number;
     modelToUserMap: Map<number, any>;
     modelToItemMap: Map<number, any>;
@@ -73,7 +73,7 @@ export class Learner {
 
             if (options?.l2Labmda == null) this.l2Labmda = 0;
             else this.l2Labmda = options?.l2Labmda;
-            this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, this.l2Labmda, this.ratingRange);
+            this.MFC = new MatrixFactorization(1, 1, this.embeddingOutputSize, this.l2Labmda, this.ratingRange);
             this.model = this.MFC.model;
 
             this.dataBlock.datasetInfo.userToModelMap.set('0', 0)
@@ -127,16 +127,16 @@ export class Learner {
                 validationData: this.dataBlock.validationDataset,
                 epochs: epochs,
             })
-        else 
-        return this.model.fitDataset(this.dataBlock.trainingDataset, {
-            epochs: epochs,
-        })
+        else
+            return this.model.fitDataset(this.dataBlock.trainingDataset, {
+                epochs: epochs,
+            })
     }
 
     /**
         To recommend k items for a user given their ID
     */
-    async recommendItems(userId: number, k: number, alreadyWatched: boolean = false): Promise<number[]> {
+    async recommendItems(userId: any, k: number, alreadyWatched: boolean = false): Promise<number[]> {
         if (this.itemsNum == null)
             throw new NonExistance(
                 `itemsNum does not exist, this is maybe because you did not feed Learner a DataBlock`
@@ -145,6 +145,7 @@ export class Learner {
         if (this.model == null)
             throw new NonExistance(`No model to train, please provoid a proper model`);
         let userIdMapped = this.dataBlock?.datasetInfo.userToModelMap.get(`${userId}`) as number
+
         // to fix map
         let toPredict = [
             tf.fill([this.itemsNum, 1], userIdMapped),
@@ -252,11 +253,19 @@ export class Learner {
             throw new NonExistance(`embeddingOutputSize does not exist`);
 
         this.usersNum += 1
-        this.dataBlock?.datasetInfo.userToModelMap.set(`${userId}`, this.usersNum);
-        this.modelToUserMap.set(this.usersNum, `${userId}`)
-        let userEmbeddingWeight = this.model.getWeights()[0];
-        userEmbeddingWeight = tf.concat([userEmbeddingWeight, userEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
-        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, [userEmbeddingWeight]);
+        this.dataBlock.datasetInfo.usersNum += 1
+        this.dataBlock.datasetInfo.userToModelMap.set(`${userId}`, this.usersNum - 1);
+        this.modelToUserMap.set(this.usersNum - 1, `${userId}`);
+
+        //check if datablock existed, because of userNums == 1 this means datablock didn't exist.
+        if (this.usersNum > 1) {
+            let userEmbeddingWeight = this.model.getWeights()[0];
+            userEmbeddingWeight = tf.concat([userEmbeddingWeight, userEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
+            this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum == 0 ? 1 : this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, [userEmbeddingWeight]);
+        }
+        else {
+            this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum == 0 ? 1 : this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange);
+        }
         this.model = this.MFC.model;
         this.setOptimizer(this.optimizerName);
     }
@@ -271,11 +280,18 @@ export class Learner {
             throw new NonExistance(`embeddingOutputSize does not exist`);
 
         this.itemsNum += 1;
-        this.dataBlock?.datasetInfo.itemToModelMap.set(`${itemId}`, this.itemsNum);
-        this.modelToItemMap.set(this.itemsNum, `${itemId}`)
-        let itemEmbeddingWeight = this.model.getWeights()[1];
-        itemEmbeddingWeight = tf.concat([itemEmbeddingWeight, itemEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
-        this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, undefined, [itemEmbeddingWeight]);
+        this.dataBlock.datasetInfo.itemsNum += 1
+        this.dataBlock.datasetInfo.itemToModelMap.set(`${itemId}`, this.itemsNum - 1);
+        this.modelToItemMap.set(this.itemsNum - 1, `${itemId}`);
+
+        if (this.itemsNum > 1) {
+            let itemEmbeddingWeight = this.model.getWeights()[1];
+            itemEmbeddingWeight = tf.concat([itemEmbeddingWeight, itemEmbeddingWeight.mean(0).reshape([1, this.embeddingOutputSize])]);
+            this.MFC = new MatrixFactorization(this.usersNum == 0 ? 1 : this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, undefined, [itemEmbeddingWeight]);
+        }
+        else {
+            this.MFC = new MatrixFactorization(this.usersNum == 0 ? 1 : this.usersNum, this.itemsNum, this.embeddingOutputSize, 0, this.ratingRange, undefined);
+        }
         this.model = this.MFC.model;
         this.setOptimizer(this.optimizerName);
     }

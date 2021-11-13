@@ -144,7 +144,7 @@ export class Learner {
 
         if (this.model == null)
             throw new NonExistance(`No model to train, please provoid a proper model`);
-        let userIdMapped = this.dataBlock?.datasetInfo.userToModelMap.get(`${userId}`) as number
+        let userIdMapped = this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`) as number
 
         // to fix map
         let toPredict = [
@@ -309,7 +309,7 @@ export class Learner {
         if (k < 1) throw new ValueError(`the k in mostSimilarUsers >= 1`);
 
         let userEmbeddingWeight = this.model.getWeights()[0];
-        let mappedId = this.dataBlock?.datasetInfo.userToModelMap.get(`${id}`) as number
+        let mappedId = this.dataBlock.datasetInfo.userToModelMap.get(`${id}`) as number
         let similarity = cosineSimilarity(userEmbeddingWeight, userEmbeddingWeight.slice(mappedId, 1));
         let { values, indices } = tf.topk(similarity, k + 1);
         let indicesArray = (indices.arraySync() as number[])
@@ -326,7 +326,7 @@ export class Learner {
         if (k < 1) throw new ValueError(`the k in mostSimilarItems >= 1`);
 
         let itemEmbeddingWeight = this.model.getWeights()[1];
-        let mappedId = this.dataBlock?.datasetInfo.itemToModelMap.get(`${id}`) as number
+        let mappedId = this.dataBlock.datasetInfo.itemToModelMap.get(`${id}`) as number
         let similarity = cosineSimilarity(itemEmbeddingWeight, itemEmbeddingWeight.slice(mappedId, 1))
         let { values, indices } = tf.topk(similarity, k + 1);
         let indicesArray = (indices.arraySync() as number[])
@@ -337,9 +337,9 @@ export class Learner {
       Use this when a user view an item but did not rate it, allowing pprec to not re-recommend this item
     */
     viewed(userId: any, itemId: any) {
-        let userIdMapped = (this.dataBlock?.datasetInfo.userToModelMap.get(`${userId}`) as number);
-        let itemIdMapped = (this.dataBlock?.datasetInfo.itemToModelMap.get(`${itemId}`) as number);
-        this.dataBlock?.client.SADD(userIdMapped.toString(), itemIdMapped.toString());
+        let userIdMapped = (this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`) as number);
+        let itemIdMapped = (this.dataBlock.datasetInfo.itemToModelMap.get(`${itemId}`) as number);
+        this.dataBlock.client.SADD(userIdMapped.toString(), itemIdMapped.toString());
     }
 
     /**
@@ -351,10 +351,10 @@ export class Learner {
         if (!fs.existsSync(path)) {
             fs.mkdirSync(path);
         }
-        let userMap = JSON.stringify(Array.from((this.dataBlock?.datasetInfo.userToModelMap as Map<any, number>).entries()))
+        let userMap = JSON.stringify(Array.from((this.dataBlock.datasetInfo.userToModelMap as Map<any, number>).entries()))
         fs.writeFileSync(`${path}/userToModelMap.txt`, userMap);
 
-        let itemMap = JSON.stringify(Array.from((this.dataBlock?.datasetInfo.itemToModelMap as Map<any, number>).entries()))
+        let itemMap = JSON.stringify(Array.from((this.dataBlock.datasetInfo.itemToModelMap as Map<any, number>).entries()))
         fs.writeFileSync(`${path}/itemToModelMap.txt`, itemMap);
 
         return this.model.save('file://' + path);

@@ -52,7 +52,9 @@ const data = dataBlock().fromArray(
     items = [10,7,3,10],
     users = [15,30,1,500],
     ratings = [1,2,2,5],
-    batchSize =  4 );
+    {
+        batchSize :  4 
+    });
 ```
 if you don't have any data yet to use for training jump to [Without DataBlock](#Without-DataBlock). 
 ## Creating a Learner

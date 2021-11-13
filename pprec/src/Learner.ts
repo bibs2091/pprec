@@ -21,7 +21,7 @@ export class Learner {
     usersNum: number;
     learningRate: number;
     lossFunc: string;
-    embeddingOutputSize?: number;
+    embeddingOutputSize: number;
     optimizer: tf.Optimizer;
     model: tf.LayersModel;
     MFC?: MatrixFactorization;
@@ -137,14 +137,16 @@ export class Learner {
         To recommend k items for a user given their ID
     */
     async recommendItems(userId: any, k: number, alreadyWatched: boolean = false): Promise<number[]> {
-        if (this.itemsNum == null)
-            throw new NonExistance(
-                `itemsNum does not exist, this is maybe because you did not feed Learner a DataBlock`
-            );
 
-        if (this.model == null)
-            throw new NonExistance(`No model to train, please provoid a proper model`);
-        let userIdMapped = this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`) as number
+        if (k > this.itemsNum)
+            throw new ValueError(`The value k = ${k} is bigger than the number of items you actually have.`);
+
+
+        let userIdMapped = this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`)
+
+        if (!userIdMapped)
+            throw new NonExistance(`The user ${userId} does not exist, please recheck the ID again.`);
+
 
         // to fix map
         let toPredict = [
@@ -172,10 +174,15 @@ export class Learner {
     */
     addRating(userId: any, itemId: any, rating: any, train: boolean = true): void | Promise<tf.History> {
 
-        if (this.dataBlock == null)
-            throw new NonExistance(`No datablock to train on, please provoid a proper DataBlock `);
         let userIdMapped = (this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`) as number);
         let itemIdMapped = (this.dataBlock.datasetInfo.itemToModelMap.get(`${itemId}`) as number);
+
+        if (!userIdMapped)
+            throw new NonExistance(`The user ${userId} does not exist, please recheck the ID again.`);
+
+        if (!itemIdMapped)
+            throw new NonExistance(`The item ${itemId} does not exist, please recheck the ID again.`);
+
         let toAdd = tf.data.array([
             {
                 xs: {
@@ -196,9 +203,6 @@ export class Learner {
         }
 
         if (train) {
-            if (this.model == null)
-                throw new NonExistance(`No model to train, please provoid a proper model`);
-
             return this.model.fitDataset(toAdd, {
                 epochs: 1,
                 verbose: 0
@@ -209,11 +213,17 @@ export class Learner {
 
     async addRatingSync(userId: any, itemId: any, rating: any, train: boolean = true) {
 
-        if (this.dataBlock == null)
-            throw new NonExistance(`No datablock to train on, please provoid a proper DataBlock `);
-
         let userIdMapped = (this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`) as number);
         let itemIdMapped = (this.dataBlock.datasetInfo.itemToModelMap.get(`${itemId}`) as number);
+
+
+        if (!userIdMapped)
+            throw new NonExistance(`The user ${userId} does not exist, please recheck the ID again.`);
+
+        if (!itemIdMapped)
+            throw new NonExistance(`The item ${itemId} does not exist, please recheck the ID again.`);
+
+
         let toAdd = tf.data.array([
             {
                 xs: {
@@ -248,9 +258,6 @@ export class Learner {
         The embedding is generated based on the mean of the other users latent factors.
     */
     newUser(userId: any) {
-
-        if (this.embeddingOutputSize == null)
-            throw new NonExistance(`embeddingOutputSize does not exist`);
 
         this.usersNum += 1
         this.dataBlock.datasetInfo.usersNum += 1
@@ -303,13 +310,17 @@ export class Learner {
     */
     mostSimilarUsers(id: any, k = 10): string[] {
 
-        if (this.model == null)
-            throw new NonExistance(`No model to train, please provoid a proper model`);
-
         if (k < 1) throw new ValueError(`the k in mostSimilarUsers >= 1`);
+        if (k > this.usersNum)
+            throw new ValueError(`The value k = ${k} is bigger than the number of users you actually have.`);
 
         let userEmbeddingWeight = this.model.getWeights()[0];
         let mappedId = this.dataBlock.datasetInfo.userToModelMap.get(`${id}`) as number
+
+        if (!mappedId)
+            throw new NonExistance(`The user ${id} does not exist, please recheck the ID again.`);
+
+
         let similarity = cosineSimilarity(userEmbeddingWeight, userEmbeddingWeight.slice(mappedId, 1));
         let { values, indices } = tf.topk(similarity, k + 1);
         let indicesArray = (indices.arraySync() as number[])
@@ -320,13 +331,19 @@ export class Learner {
        To retrieve the k similar items of an item 
     */
     mostSimilarItems(id: any, k = 10): number[] {
-        if (this.model == null)
-            throw new NonExistance(`No model to train, please provoid a proper model`);
 
         if (k < 1) throw new ValueError(`the k in mostSimilarItems >= 1`);
+        if (k > this.itemsNum)
+            throw new ValueError(`The value k = ${k} is bigger than the number of items you actually have.`);
 
         let itemEmbeddingWeight = this.model.getWeights()[1];
-        let mappedId = this.dataBlock.datasetInfo.itemToModelMap.get(`${id}`) as number
+        let mappedId = this.dataBlock.datasetInfo.itemToModelMap.get(`${id}`)
+
+        if (!mappedId)
+            throw new NonExistance(`The item ${id} does not exist, please recheck the ID again.`);
+
+
+
         let similarity = cosineSimilarity(itemEmbeddingWeight, itemEmbeddingWeight.slice(mappedId, 1))
         let { values, indices } = tf.topk(similarity, k + 1);
         let indicesArray = (indices.arraySync() as number[])
@@ -371,7 +388,7 @@ export class Learner {
         this.model = await tf.loadLayersModel('file://' + path + '/model.json');
         this.usersNum = this.model.getWeights()[0].shape[0] - 1;
         this.itemsNum = this.model.getWeights()[1].shape[0] - 1;
-        this.embeddingOutputSize = this.model.getWeights()[0].shape[1];
+        this.embeddingOutputSize = this.model.getWeights()[0].shape[1] as number;
         this.setOptimizer(this.optimizerName);
 
         // load userToModelMap and itemToModelMap

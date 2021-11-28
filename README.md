@@ -1,3 +1,7 @@
+<p align="center">
+    <img src="assests\PPREC logo.png" width="350" alt="credit: Lina Khiati"/>
+</p>
+
 # pprec
 PPREC is a node-js library made for web applications to help them integrate a recommendation systems easily. The library offers a higher level of abstraction for developers who are not comfortable with concepts like tensors, layers, optimizers and loss functions, and want to add a recommender in few lines of code.
 

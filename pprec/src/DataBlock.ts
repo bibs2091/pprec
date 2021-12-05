@@ -256,13 +256,13 @@ export class DataBlock {
         this.validationDataset = tf.data.array((psuedoValidationDataset))
     }
 
-
-    /**
-        save the datablock in a path (training + validation)
+/**
+        save the datablock in a path (training + validation).
+        In case you wanted to save the validation data in different file, write the validation file name in the second argument "validationFileName"
     */
-    async save(outputFile: string): Promise<void> {
-        const writeStream = fs.createWriteStream(outputFile);
-        const stream = csv.format({ headers: ['user', 'item', 'rating'] });
+    async save(outputFile: string, validationFileName?: string): Promise<void> {
+        let writeStream = fs.createWriteStream(outputFile);
+        let stream = csv.format({ headers: ['user', 'item', 'rating'] });
         await this.trainingDataset.forEachAsync(
             function (e: Idataset) {
                 let users_ = e.xs.user.dataSync()
@@ -272,6 +272,15 @@ export class DataBlock {
                     stream.write([users_[i], items_[i], ratings_[i]])
             }
         );
+
+        if (validationFileName != null) {
+            console.log("validation");
+            
+            stream.end();
+            stream.pipe(writeStream);
+            writeStream = fs.createWriteStream(validationFileName);
+            stream = csv.format({ headers: ['user', 'item', 'rating'] });
+        }
 
         if (this.validationDataset != null)
             await this.validationDataset.forEachAsync(
@@ -287,6 +296,7 @@ export class DataBlock {
         stream.end();
         stream.pipe(writeStream);
     }
+
 
     /**
         return the size of the dataset (training + validation)

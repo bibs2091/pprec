@@ -144,7 +144,7 @@ export class Learner {
 
         let userIdMapped = this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`)
 
-        if (!userIdMapped)
+        if (userIdMapped == null)
             throw new NonExistance(`The user ${userId} does not exist, please recheck the ID again.`);
 
 
@@ -177,10 +177,10 @@ export class Learner {
         let userIdMapped = (this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`) as number);
         let itemIdMapped = (this.dataBlock.datasetInfo.itemToModelMap.get(`${itemId}`) as number);
 
-        if (!userIdMapped)
+        if (userIdMapped == null)
             throw new NonExistance(`The user ${userId} does not exist, please recheck the ID again.`);
 
-        if (!itemIdMapped)
+        if (itemIdMapped == null)
             throw new NonExistance(`The item ${itemId} does not exist, please recheck the ID again.`);
 
         let toAdd = tf.data.array([
@@ -217,10 +217,10 @@ export class Learner {
         let itemIdMapped = (this.dataBlock.datasetInfo.itemToModelMap.get(`${itemId}`) as number);
 
 
-        if (!userIdMapped)
+        if (userIdMapped == null)
             throw new NonExistance(`The user ${userId} does not exist, please recheck the ID again.`);
 
-        if (!itemIdMapped)
+        if (itemIdMapped == null)
             throw new NonExistance(`The item ${itemId} does not exist, please recheck the ID again.`);
 
 
@@ -317,7 +317,7 @@ export class Learner {
         let userEmbeddingWeight = this.model.getWeights()[0];
         let mappedId = this.dataBlock.datasetInfo.userToModelMap.get(`${id}`) as number
 
-        if (!mappedId)
+        if (mappedId == null)
             throw new NonExistance(`The user ${id} does not exist, please recheck the ID again.`);
 
 
@@ -339,7 +339,7 @@ export class Learner {
         let itemEmbeddingWeight = this.model.getWeights()[1];
         let mappedId = this.dataBlock.datasetInfo.itemToModelMap.get(`${id}`)
 
-        if (!mappedId)
+        if (mappedId == null)
             throw new NonExistance(`The item ${id} does not exist, please recheck the ID again.`);
 
 

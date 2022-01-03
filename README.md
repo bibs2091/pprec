@@ -148,8 +148,9 @@ await myLearner.addRating("UUID25435", "Squid Games", 4);
 - [ ] Output DP
 - [ ] Gradient perturbation
 - [ ] Other algorthims than Matrix factorization
-\
+
+# Support the project ☕
+I would really appreciate if you **donate** to me so i can continue working on the project: [Here](https://www.buymeacoffee.com/bibs2091)
 &nbsp;
-\
-&nbsp;
+
 Wanna contribute? check [the contribution guide](./CONTRIBUTING.md)

@@ -8,7 +8,7 @@ import * as fs from 'fs';
 
 
 interface optionsLearner {
-    learningRate: number; embeddingOutputSize?: number;
+    learningRate?: number; embeddingOutputSize?: number;
     lossFunc?: string; optimizerName?: string;
     l2Labmda?: number; redisUrl?: string
 }
@@ -32,27 +32,28 @@ export class Learner {
     modelToUserMap: Map<number, any>;
     modelToItemMap: Map<number, any>;
     constructor(dataBlock?: DataBlock, options?: optionsLearner) {
-        if (dataBlock != null && options != null) {
+        if (dataBlock != null) {
             this.dataBlock = dataBlock;
             this.itemsNum = this.dataBlock.datasetInfo.itemsNum;
             this.usersNum = this.dataBlock.datasetInfo.usersNum;
             this.ratingRange = this.dataBlock.ratingRange
-            this.learningRate = options.learningRate;
+            this.learningRate = options?.learningRate ? options?.learningRate : 1e-3 ;
 
-            if (options.lossFunc == null) this.lossFunc = "meanSquaredError";
-            else this.lossFunc = options.lossFunc;
 
-            if (options.embeddingOutputSize == null) this.embeddingOutputSize = 3;
-            else this.embeddingOutputSize = options.embeddingOutputSize;
+            if (options?.lossFunc == null) this.lossFunc = "meanSquaredError";
+            else this.lossFunc = options?.lossFunc;
 
-            if (options.l2Labmda == null) this.l2Labmda = 0;
-            else this.l2Labmda = options.l2Labmda;
+            if (options?.embeddingOutputSize == null) this.embeddingOutputSize = 3;
+            else this.embeddingOutputSize = options?.embeddingOutputSize;
+
+            if (options?.l2Labmda == null) this.l2Labmda = 0;
+            else this.l2Labmda = options?.l2Labmda;
 
             this.MFC = new MatrixFactorization(this.usersNum, this.itemsNum, this.embeddingOutputSize, this.l2Labmda, this.ratingRange);
             this.model = this.MFC.model;
 
-            if (options.optimizerName == null) this.optimizerName = "adam";
-            else this.optimizerName = options.optimizerName;
+            if (options?.optimizerName == null) this.optimizerName = "adam";
+            else this.optimizerName = options?.optimizerName;
             this.setOptimizer(this.optimizerName);
             this.modelToUserMap = new Map();
             this.modelToItemMap = new Map();
@@ -143,7 +144,7 @@ export class Learner {
 
 
         let userIdMapped = this.dataBlock.datasetInfo.userToModelMap.get(`${userId}`)
-
+        
         if (userIdMapped == null)
             throw new NonExistance(`The user ${userId} does not exist, please recheck the ID again.`);
 

@@ -27,7 +27,7 @@ import { dataBlock, learner } from 'pprec';
 
 * **No?** no problem, do this:
 ```
-const myLearner = learner({ learningRate: 1e-3 });
+const myLearner = learner();
 ```
 3. If your website have new users or items you can tell pprec about them [like this](##Adding-new-user/item).
 4. if a user rated an item, you should also tell pprec so it can adjust its recommendations on it [like this](#Adding-a-rating).
@@ -46,7 +46,6 @@ const data = await dataBlock().fromCsv("data.csv", {
         userColumn: 'user',
         itemColumn: 'movie', 
         ratingColumn: 'rating',
-        batchSize: 64, 
         ratingRange: [0, 5]
         });
 ```
@@ -55,17 +54,15 @@ const data = await dataBlock().fromCsv("data.csv", {
 const data = dataBlock().fromArray(
     items = [10,7,3,10],
     users = [15,30,1,500],
-    ratings = [1,2,2,5],
-    {
-        batchSize :  4 
-    });
+    ratings = [1,2,2,5]
+    );
 ```
 if you don't have any data yet to use for training jump to [Without DataBlock](#Without-DataBlock). 
 ## Creating a Learner
 Learner is the responsible for training the recommendation model and infrencing/generating recommendations from it.
 To create a learner:
 ```
-const myLearner = learner(data, { learningRate: 1e-3 });
+const myLearner = learner(datass);
 ``` 
 ## Optimize the Learner
 fit (train) the learner for few epoches:
@@ -128,7 +125,7 @@ You can use the DataBlock.fromCsv() method to load the data in pprec again.
 ## Without DataBlock
 pprec takes into account the case when a website does not have any data to build the recommendation on, in this case you can initilize the Learner directly then add users, items, and ratings to it. Example
 ```
-const myLearner = learner({ learningRate: 1e-3 });
+const myLearner = learner();
 
 myLearner.newUser("UUID25435");
 
